@@ -77,7 +77,9 @@ function updateWranglerJsonc() {
 }
 
 function runSetupCommands() {
-    const commands = [];
+    const commands = [
+    "rm -rf src/components/ThemeToggle.tsx"
+];
     
     if (commands.length === 0) {
         console.log('⊘ No setup commands to run');
