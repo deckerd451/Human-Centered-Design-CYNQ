@@ -77,15 +77,7 @@ function updateWranglerJsonc() {
 }
 
 function runSetupCommands() {
-    const commands = [
-    "bun install reactflow",
-    "bun install @xyflow/react",
-    "bun uninstall reactflow react-flow",
-    "bun add @supabase/supabase-js",
-    "bun add node-fetch",
-    "bun remove @supabase/supabase-js node-fetch",
-    "bun add uuid @types/uuid"
-];
+    const commands = [];
     
     if (commands.length === 0) {
         console.log('⊘ No setup commands to run');
