@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { GitCommit, GitPullRequest, Star, GitFork, BookCopy, Activity } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Cell } from "@/components/ui/chart";
 const mockRepositories = [
   {
     name: 'codestream',
@@ -32,6 +34,13 @@ const mockRepositories = [
     stars: 310,
     forks: 88,
     lastUpdate: '5 days ago',
+  },
+  {
+    name: 'python-scripts',
+    language: 'Python',
+    stars: 215,
+    forks: 60,
+    lastUpdate: '2 weeks ago',
   },
 ];
 const mockActivity = [
@@ -67,17 +76,51 @@ const mockActivity = [
         time: '3 days ago',
         user: { name: 'Jane Doe', avatar: 'https://github.com/shadcn.png' }
     }
-]
-const LanguageBadge = ({ language }: { language: string }) => {
-    const colors: { [key: string]: string } = {
-        TypeScript: 'bg-blue-500/20 text-blue-500 border-blue-500/30',
-        JavaScript: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30',
-        Go: 'bg-cyan-500/20 text-cyan-500 border-cyan-500/30',
-        CSS: 'bg-pink-500/20 text-pink-500 border-pink-500/30',
-    };
-    return <Badge variant="outline" className={`font-mono ${colors[language] || 'border-border'}`}>{language}</Badge>;
-}
+];
+const languageColors: { [key: string]: string } = {
+  TypeScript: 'bg-blue-500/20 text-blue-500 border-blue-500/30',
+  JavaScript: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30',
+  Go: 'bg-cyan-500/20 text-cyan-500 border-cyan-500/30',
+  CSS: 'bg-pink-500/20 text-pink-500 border-pink-500/30',
+  Python: 'bg-green-500/20 text-green-500 border-green-500/30',
+};
+const chartLanguageColors = {
+    TypeScript: "#3178c6",
+    JavaScript: "#f1e05a",
+    Go: "#00ADD8",
+    CSS: "#563d7c",
+    Python: "#3572A5",
+};
+const LanguageBadge = ({ language }: { language: string }) => (
+    <Badge variant="outline" className={`font-mono ${languageColors[language] || 'border-border'}`}>{language}</Badge>
+);
+const StatsCard = ({ title, value, icon: Icon }: { title: string; value: string | number; icon: React.ElementType }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+        </CardContent>
+    </Card>
+);
 export function DashboardPage() {
+    const stats = useMemo(() => {
+        const totalStars = mockRepositories.reduce((acc, repo) => acc + repo.stars, 0);
+        const totalForks = mockRepositories.reduce((acc, repo) => acc + repo.forks, 0);
+        const languageDistribution = mockRepositories.reduce((acc, repo) => {
+            acc[repo.language] = (acc[repo.language] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        const pieChartData = Object.entries(languageDistribution).map(([name, value]) => ({ name, value }));
+        return {
+            totalRepos: mockRepositories.length,
+            totalStars,
+            totalForks,
+            pieChartData,
+        };
+    }, []);
   return (
     <AppLayout container>
         <div className="space-y-8">
@@ -85,11 +128,66 @@ export function DashboardPage() {
                 <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
                 <p className="text-lg text-muted-foreground">A summary of your GitHub activity.</p>
             </header>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <StatsCard title="Total Repositories" value={stats.totalRepos} icon={BookCopy} />
+                <StatsCard title="Total Stars" value={stats.totalStars.toLocaleString()} icon={Star} />
+                <StatsCard title="Total Forks" value={stats.totalForks.toLocaleString()} icon={GitFork} />
+            </div>
+            <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-5">
+                <Card className="lg:col-span-3">
+                    <CardHeader>
+                        <CardTitle>Stars per Repository</CardTitle>
+                        <CardDescription>A look at your most popular projects.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pl-2">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={mockRepositories}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                                <Tooltip
+                                    cursor={{ fill: 'hsl(var(--muted))' }}
+                                    contentStyle={{
+                                        background: 'hsl(var(--background))',
+                                        border: '1px solid hsl(var(--border))',
+                                        borderRadius: 'var(--radius)',
+                                    }}
+                                />
+                                <Bar dataKey="stars" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle>Language Distribution</CardTitle>
+                        <CardDescription>The makeup of your codebase.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                                <Pie data={stats.pieChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                                    {stats.pieChartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={chartLanguageColors[entry.name as keyof typeof chartLanguageColors] || '#8884d8'} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{
+                                        background: 'hsl(var(--background))',
+                                        border: '1px solid hsl(var(--border))',
+                                        borderRadius: 'var(--radius)',
+                                    }}
+                                />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </CardContent>
+                </Card>
+            </div>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><BookCopy className="size-5" /> Your Repositories</CardTitle>
-                        <CardDescription>An overview of your most popular repositories.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -120,7 +218,6 @@ export function DashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Activity className="size-5" /> Recent Activity</CardTitle>
-                        <CardDescription>Your latest actions on GitHub.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-6">
@@ -145,7 +242,7 @@ export function DashboardPage() {
                 </Card>
             </div>
             <footer className="text-center text-sm text-muted-foreground pt-8">
-                Built with ���️ at Cloudflare
+                Built with ❤️ at Cloudflare
             </footer>
         </div>
     </AppLayout>
