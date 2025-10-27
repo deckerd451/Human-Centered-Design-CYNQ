@@ -1,39 +1,31 @@
 import { create } from 'zustand';
+import { User } from '@/lib/types';
 type AuthState = 'disconnected' | 'connecting' | 'connected';
-interface UserProfile {
-  name: string;
-  username: string;
-  avatarUrl: string;
-  bio: string;
-  repos: number;
-  followers: number;
-  following: number;
-}
 interface AuthStore {
   authState: AuthState;
-  user: UserProfile | null;
-  connect: () => void;
-  disconnect: () => void;
+  user: User | null;
+  login: () => void;
+  logout: () => void;
 }
-const mockUser: UserProfile = {
-  name: 'Jane Doe',
-  username: 'janedoe',
+const mockUser: User = {
+  id: 'user-1',
+  name: 'Alex Innovator',
+  username: 'alex_innovator',
   avatarUrl: 'https://github.com/shadcn.png',
-  bio: 'Building beautiful and reliable web experiences.',
-  repos: 128,
-  followers: 2048,
-  following: 256,
+  bio: 'Passionate about building the future, one idea at a time. Full-stack developer with a love for serverless tech.',
+  skills: ['React', 'TypeScript', 'Node.js', 'Cloudflare Workers', 'Go'],
+  interests: ['AI/ML', 'Decentralized Systems', 'UX Design'],
 };
 export const useAuthStore = create<AuthStore>((set) => ({
   authState: 'disconnected',
   user: null,
-  connect: () => {
+  login: () => {
     set({ authState: 'connecting' });
     setTimeout(() => {
       set({ authState: 'connected', user: mockUser });
-    }, 2000); // Simulate a 2-second OAuth flow
+    }, 1500); // Simulate a 1.5-second login flow
   },
-  disconnect: () => {
+  logout: () => {
     set({ authState: 'disconnected', user: null });
   },
 }));
