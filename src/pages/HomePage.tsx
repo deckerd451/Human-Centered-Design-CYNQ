@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { AppLayout } from '@/components/AppLayout';
+import { AppLayout } from '@/components/layout/AppLayout';
 const cardVariants = {
   initial: { opacity: 0, y: 20, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
