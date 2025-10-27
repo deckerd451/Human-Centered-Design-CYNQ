@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { AppLayout } from '@/components/AppLayout';
 const cardVariants = {
   initial: { opacity: 0, y: 20, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
@@ -85,26 +85,16 @@ const ConnectedState = () => {
 export function HomePage() {
   const authState = useAuthStore((s) => s.authState);
   return (
-    <div className="min-h-screen w-full bg-gradient-subtle">
-      <ThemeToggle className="fixed top-4 right-4" />
-      <main className="min-h-screen flex flex-col items-center justify-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="py-12">
-            <Card className="w-full max-w-md mx-auto shadow-xl rounded-2xl overflow-hidden border-border/50">
-              <div className="min-h-[480px] flex items-center justify-center p-6 md:p-8">
-                <AnimatePresence mode="wait">
-                  {authState === 'disconnected' && <DisconnectedState />}
-                  {authState === 'connecting' && <ConnectingState />}
-                  {authState === 'connected' && <ConnectedState />}
-                </AnimatePresence>
-              </div>
-            </Card>
-          </div>
+    <AppLayout>
+      <Card className="w-full max-w-md mx-auto shadow-xl rounded-2xl overflow-hidden border-border/50">
+        <div className="min-h-[480px] flex items-center justify-center p-6 md:p-8">
+          <AnimatePresence mode="wait">
+            {authState === 'disconnected' && <DisconnectedState />}
+            {authState === 'connecting' && <ConnectingState />}
+            {authState === 'connected' && <ConnectedState />}
+          </AnimatePresence>
         </div>
-      </main>
-      <footer className="fixed bottom-4 w-full text-center text-muted-foreground text-sm">
-        Built with ❤️ at Cloudflare
-      </footer>
-    </div>
+      </Card>
+    </AppLayout>
   );
 }
