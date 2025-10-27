@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Link } from 'react-router-dom';
+import NeuralBackground from '@/components/NeuralBackground';
 const cardVariants = {
   initial: { opacity: 0, y: 20, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
@@ -92,8 +93,9 @@ export function HomePage() {
   const authState = useAuthStore((s) => s.authState);
   return (
     <AppLayout>
-      <main className="flex items-center justify-center min-h-screen bg-gradient-subtle p-4">
-        <Card className="w-full max-w-md mx-auto shadow-xl rounded-2xl overflow-hidden border-border/50">
+      <main className="relative flex items-center justify-center min-h-screen bg-background overflow-hidden p-4">
+        <NeuralBackground />
+        <Card className="relative z-10 w-full max-w-md mx-auto shadow-xl rounded-2xl overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
           <div className="min-h-[520px] flex items-center justify-center p-6 md:p-8">
             <AnimatePresence mode="wait">
               {authState === 'disconnected' && <DisconnectedState />}
