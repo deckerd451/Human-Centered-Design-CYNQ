@@ -188,6 +188,7 @@ export function DashboardPage() {
                 <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><BookCopy className="size-5" /> Your Repositories</CardTitle>
+                        <CardDescription>An overview of your most recent repositories.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -218,6 +219,7 @@ export function DashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Activity className="size-5" /> Recent Activity</CardTitle>
+                        <CardDescription>Your latest actions on GitHub.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-6">
