@@ -78,7 +78,10 @@ function updateWranglerJsonc() {
 
 function runSetupCommands() {
     const commands = [
-    "rm -rf src/components/ThemeToggle.tsx"
+    "rm -rf src/components/ThemeToggle.tsx",
+    "rm -rf src/lib/github.ts",
+    "rm -rf src/pages/RepositoriesPage.tsx",
+    "rm -rf src/pages/RepositoryDetailPage.tsx"
 ];
     
     if (commands.length === 0) {
