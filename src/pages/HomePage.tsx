@@ -14,7 +14,6 @@ const cardVariants: Variants = {
 };
 const ConnectedProfile = () => {
   const user = useAuthStore((s) => s.user);
-  const disconnect = useAuthStore((s) => s.disconnect);
   if (!user) return null;
   return (
     <motion.div variants={cardVariants} initial="initial" animate="animate" className="w-full">
@@ -59,9 +58,6 @@ const ConnectedProfile = () => {
                 </Link>
             </Button>
         </div>
-        <Button onClick={disconnect} variant="secondary" className="w-full font-semibold">
-          Disconnect
-        </Button>
       </CardFooter>
     </motion.div>
   );

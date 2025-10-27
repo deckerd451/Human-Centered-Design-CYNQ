@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 import { LayoutDashboard, Settings, LogOut, User } from "lucide-react";
 export function UserProfileNav() {
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const disconnect = useAuthStore((s) => s.disconnect);
   if (!user) {
     return null;
   }
@@ -38,15 +38,15 @@ export function UserProfileNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/dashboard">
+          <Link to="/">
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link to="/">
+          <Link to="/dashboard">
             <LayoutDashboard className="mr-2 h-4 w-4" />
-            <span>Home</span>
+            <span>Dashboard</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
@@ -56,7 +56,7 @@ export function UserProfileNav() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={logout}>
+        <DropdownMenuItem onClick={disconnect}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
