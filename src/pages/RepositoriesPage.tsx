@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getRepositories, Repository } from "@/lib/github";
+import { Repository } from "@/lib/github";
+import { getRepositories } from "@/lib/apiClient";
 import { GitFork, Star, Lock, Search, BookCopy } from "lucide-react";
 const languageColors: { [key: string]: string } = {
   TypeScript: 'bg-blue-500/20 text-blue-500 border-blue-500/30',
