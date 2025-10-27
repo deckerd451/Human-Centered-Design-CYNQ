@@ -5,10 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Repository, Commit } from "@/lib/github";
-import { getRepositoryByName } from "@/lib/apiClient";
-import { GitFork, Star, Lock, ArrowLeft, GitCommit, FileText, AlertTriangle, BookCopy, Clipboard, Check } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getRepositoryByName, Repository, Commit } from "@/lib/github";
+import { GitFork, Star, Lock, ArrowLeft, GitCommit, FileText, AlertTriangle, BookCopy } from "lucide-react";
 const languageColors: { [key: string]: string } = {
   TypeScript: 'bg-blue-500/20 text-blue-500 border-blue-500/30',
   JavaScript: 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30',
@@ -20,36 +18,6 @@ const languageColors: { [key: string]: string } = {
 const LanguageBadge = ({ language }: { language: string }) => (
   <Badge variant="outline" className={`font-mono ${languageColors[language] || 'border-border'}`}>{language}</Badge>
 );
-const MarkdownRenderer = ({ content }: { content: string }) => {
-  const blocks = content.split(/(```[\s\S]*?```)/g);
-  return (
-    <div className="prose prose-sm dark:prose-invert max-w-none">
-      {blocks.map((block, index) => {
-        if (block.startsWith('```')) {
-          const code = block.replace(/```/g, '').trim();
-          return (
-            <pre key={index} className="bg-muted p-4 rounded-md overflow-x-auto">
-              <code className="font-mono">{code}</code>
-            </pre>
-          );
-        } else {
-          return block.split('\n').map((line, lineIndex) => {
-            if (line.startsWith('## ')) {
-              return <h3 key={`${index}-${lineIndex}`} className="text-xl font-semibold mt-4 mb-2">{line.substring(3)}</h3>;
-            }
-            if (line.startsWith('# ')) {
-              return <h2 key={`${index}-${lineIndex}`} className="text-2xl font-bold mt-6 mb-3 border-b pb-2">{line.substring(2)}</h2>;
-            }
-            if (line.trim() === '') {
-              return null;
-            }
-            return <p key={`${index}-${lineIndex}`} className="my-2 leading-relaxed">{line}</p>;
-          });
-        }
-      })}
-    </div>
-  );
-};
 const LoadingSkeleton = () => (
   <div className="space-y-8">
     <div className="flex items-center gap-4">
@@ -75,7 +43,6 @@ export function RepositoryDetailPage() {
   const { repoName } = useParams<{ repoName: string }>();
   const [repo, setRepo] = useState<(Repository & { readme: string; recentCommits: Commit[] }) | null | undefined>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
   useEffect(() => {
     const fetchRepo = async () => {
       if (!repoName) return;
@@ -86,13 +53,6 @@ export function RepositoryDetailPage() {
     };
     fetchRepo();
   }, [repoName]);
-  const handleCopy = () => {
-    if (!repo) return;
-    const cloneUrl = `https://github.com/janedoe/${repo.name}.git`;
-    navigator.clipboard.writeText(cloneUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
   if (loading) {
     return (
       <AppLayout container>
@@ -130,27 +90,12 @@ export function RepositoryDetailPage() {
           </Button>
         </div>
         <header className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
-                <BookCopy className="size-8 text-muted-foreground" />
-                {repo.name}
-              </h1>
-              {repo.isPrivate && <Badge variant="secondary">Private</Badge>}
-            </div>
-            <TooltipProvider>
-              <Tooltip open={copied}>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" onClick={handleCopy}>
-                    {copied ? <Check className="mr-2 h-4 w-4 text-green-500" /> : <Clipboard className="mr-2 h-4 w-4" />}
-                    {copied ? 'Copied!' : 'Clone'}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Copied to clipboard</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          <div className="flex items-center gap-4">
+            <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
+              <BookCopy className="size-8 text-muted-foreground" />
+              {repo.name}
+            </h1>
+            {repo.isPrivate && <Badge variant="secondary">Private</Badge>}
           </div>
           <p className="text-lg text-muted-foreground">{repo.description}</p>
           <div className="flex items-center gap-4 pt-2 text-muted-foreground text-sm">
@@ -171,7 +116,9 @@ export function RepositoryDetailPage() {
               <CardTitle className="flex items-center gap-2"><FileText className="size-5" /> README.md</CardTitle>
             </CardHeader>
             <CardContent>
-              <MarkdownRenderer content={repo.readme} />
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <pre className="bg-muted p-4 rounded-md overflow-x-auto"><code className="font-mono">{repo.readme}</code></pre>
+              </div>
             </CardContent>
           </Card>
           <Card>

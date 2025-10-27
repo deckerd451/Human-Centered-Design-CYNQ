@@ -1,4 +1,3 @@
-import { create } from 'zustand';
 export interface Repository {
   id: number;
   name: string;
@@ -9,6 +8,12 @@ export interface Repository {
   url: string;
   lastUpdate: string;
   isPrivate: boolean;
+}
+export interface Commit {
+  sha: string;
+  message: string;
+  author: string;
+  date: string;
 }
 const mockRepositories: Repository[] = [
   {
@@ -83,5 +88,27 @@ export const getRepositories = (): Promise<Repository[]> => {
     setTimeout(() => {
       resolve(mockRepositories);
     }, 1000); // Simulate network delay
+  });
+};
+export const getRepositoryByName = (name: string): Promise<(Repository & { readme: string; recentCommits: Commit[] }) | undefined> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const repo = mockRepositories.find(r => r.name === name);
+      if (repo) {
+        resolve({
+          ...repo,
+          readme: `# ${repo.name}\n\n${repo.description}\n\nThis is a mock README file. In a real application, this would be fetched from the GitHub API and rendered as Markdown.\n\n## Features\n\n- Feature A\n- Feature B\n- Feature C\n\n## Getting Started\n\nTo get started, clone the repository and install the dependencies.\n\n\`\`\`bash\nnpm install\nnpm start\n\`\`\``,
+          recentCommits: [
+            { sha: 'a1b2c3d', message: 'feat: Implement new dashboard layout', author: 'Jane Doe', date: '1 day ago' },
+            { sha: 'e4f5g6h', message: 'fix: Correct alignment issue on mobile', author: 'Jane Doe', date: '2 days ago' },
+            { sha: 'i7j8k9l', message: 'docs: Update README with setup instructions', author: 'Jane Doe', date: '3 days ago' },
+            { sha: 'm0n1o2p', message: 'refactor: Simplify state management logic', author: 'Jane Doe', date: '4 days ago' },
+            { sha: 'q3r4s5t', message: 'chore: Upgrade dependencies', author: 'Jane Doe', date: '5 days ago' },
+          ]
+        });
+      } else {
+        resolve(undefined);
+      }
+    }, 800); // Simulate network delay
   });
 };

@@ -14,6 +14,7 @@ import { HomePage } from '@/pages/HomePage'
 import { DashboardPage } from '@/pages/DashboardPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { RepositoriesPage } from '@/pages/RepositoriesPage';
+import { RepositoryDetailPage } from '@/pages/RepositoryDetailPage';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -28,6 +29,11 @@ const router = createBrowserRouter([
   {
     path: "/repositories",
     element: <RepositoriesPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/repository/:repoName",
+    element: <RepositoryDetailPage />,
     errorElement: <RouteErrorBoundary />,
   },
   {
