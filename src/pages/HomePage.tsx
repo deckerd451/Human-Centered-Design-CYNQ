@@ -1,4 +1,4 @@
-import { Github, Loader2, ArrowRight } from 'lucide-react';
+import { Github, Loader2, ArrowRight, BookCopy } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
@@ -76,13 +76,20 @@ const ConnectedState = () => {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-2">
-        <Button asChild className="w-full font-semibold text-base py-6">
-            <Link to="/dashboard">
-                View Dashboard <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-        </Button>
-        <Button onClick={disconnect} variant="secondary" className="w-full sm:w-auto font-semibold text-base py-6 px-6">
+      <CardFooter className="flex flex-col gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+            <Button asChild className="w-full font-semibold">
+                <Link to="/dashboard">
+                    View Dashboard <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full font-semibold">
+                <Link to="/repositories">
+                    <BookCopy className="mr-2 h-4 w-4" /> View Repositories
+                </Link>
+            </Button>
+        </div>
+        <Button onClick={disconnect} variant="secondary" className="w-full font-semibold">
           Disconnect
         </Button>
       </CardFooter>

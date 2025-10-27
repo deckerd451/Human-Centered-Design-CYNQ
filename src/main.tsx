@@ -13,6 +13,7 @@ import '@/index.css'
 import { HomePage } from '@/pages/HomePage'
 import { DashboardPage } from '@/pages/DashboardPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { RepositoriesPage } from '@/pages/RepositoriesPage';
 const router = createBrowserRouter([
   {
     path: "/",
@@ -22,6 +23,11 @@ const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: <DashboardPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/repositories",
+    element: <RepositoriesPage />,
     errorElement: <RouteErrorBoundary />,
   },
   {
