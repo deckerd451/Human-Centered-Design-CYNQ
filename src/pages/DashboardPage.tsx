@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { GitCommit, GitPullRequest, Star, GitFork, BookCopy, Activity } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend, Cell } from "@/components/ui/chart";
+import { formatNumber } from "@/lib/helpers";
 const mockRepositories = [
   {
     name: 'codestream',
@@ -130,8 +131,8 @@ export function DashboardPage() {
             </header>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <StatsCard title="Total Repositories" value={stats.totalRepos} icon={BookCopy} />
-                <StatsCard title="Total Stars" value={stats.totalStars.toLocaleString()} icon={Star} />
-                <StatsCard title="Total Forks" value={stats.totalForks.toLocaleString()} icon={GitFork} />
+                <StatsCard title="Total Stars" value={formatNumber(stats.totalStars)} icon={Star} />
+                <StatsCard title="Total Forks" value={formatNumber(stats.totalForks)} icon={GitFork} />
             </div>
             <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-5">
                 <Card className="lg:col-span-3">

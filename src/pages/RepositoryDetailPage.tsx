@@ -1,11 +1,12 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getRepositoryByName, Repository, Commit } from "@/lib/github";
+import { Repository, Commit } from "@/lib/github";
+import { getRepositoryByName } from "@/lib/apiClient";
 import { GitFork, Star, Lock, ArrowLeft, GitCommit, FileText, AlertTriangle, BookCopy, Clipboard, Check } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 const languageColors: { [key: string]: string } = {
