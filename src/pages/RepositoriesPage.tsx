@@ -1,12 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Repository } from "@/lib/github";
-import { getRepositories } from "@/lib/apiClient";
+import { getRepositories, Repository } from "@/lib/github";
 import { GitFork, Star, Lock, Search, BookCopy } from "lucide-react";
 const languageColors: { [key: string]: string } = {
   TypeScript: 'bg-blue-500/20 text-blue-500 border-blue-500/30',
@@ -20,32 +18,30 @@ const LanguageBadge = ({ language }: { language: string }) => (
   <Badge variant="outline" className={`font-mono ${languageColors[language] || 'border-border'}`}>{language}</Badge>
 );
 const RepositoryCard = ({ repo }: { repo: Repository }) => (
-  <Link to={`/repository/${repo.name}`} className="block">
-    <Card className="flex flex-col h-full hover:border-primary/50 transition-all duration-200 hover:shadow-md hover:-translate-y-1">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <span>{repo.name}</span>
-          {repo.isPrivate && <Lock className="size-4 text-muted-foreground" />}
-        </CardTitle>
-        <CardDescription className="line-clamp-2">{repo.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-grow" />
-      <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
-        <div className="flex items-center gap-4">
-          <LanguageBadge language={repo.language} />
-          <div className="flex items-center gap-1">
-            <Star className="size-4 text-yellow-500" />
-            <span>{repo.stars}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <GitFork className="size-4" />
-            <span>{repo.forks}</span>
-          </div>
+  <Card className="flex flex-col h-full hover:border-primary/50 transition-colors duration-200">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <a href={repo.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{repo.name}</a>
+        {repo.isPrivate && <Lock className="size-4 text-muted-foreground" />}
+      </CardTitle>
+      <CardDescription className="line-clamp-2">{repo.description}</CardDescription>
+    </CardHeader>
+    <CardContent className="flex-grow" />
+    <CardFooter className="flex justify-between items-center text-sm text-muted-foreground">
+      <div className="flex items-center gap-4">
+        <LanguageBadge language={repo.language} />
+        <div className="flex items-center gap-1">
+          <Star className="size-4 text-yellow-500" />
+          <span>{repo.stars}</span>
         </div>
-        <span>{repo.lastUpdate}</span>
-      </CardFooter>
-    </Card>
-  </Link>
+        <div className="flex items-center gap-1">
+          <GitFork className="size-4" />
+          <span>{repo.forks}</span>
+        </div>
+      </div>
+      <span>{repo.lastUpdate}</span>
+    </CardFooter>
+  </Card>
 );
 const LoadingSkeleton = () => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

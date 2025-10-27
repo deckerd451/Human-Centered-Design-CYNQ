@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, LayoutDashboard, Settings, LifeBuoy, Github } from "lucide-react";
+import { Home, LayoutDashboard, Settings, LifeBuoy, Github, BookCopy } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -34,11 +34,18 @@ export function AppSidebar(): JSX.Element {
               </SidebarMenuButton>
             </SidebarMenuItem>
             {isConnected && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname === '/dashboard'}>
-                  <Link to="/dashboard"><LayoutDashboard /> <span>Dashboard</span></Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === '/dashboard'}>
+                    <Link to="/dashboard"><LayoutDashboard /> <span>Dashboard</span></Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === '/repositories'}>
+                    <Link to="/repositories"><BookCopy /> <span>Repositories</span></Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </>
             )}
           </SidebarMenu>
         </SidebarGroup>
