@@ -1,4 +1,4 @@
-import { Github, Loader2 } from 'lucide-react';
+import { Github, Loader2, ArrowRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { Link } from 'react-router-dom';
 const cardVariants = {
   initial: { opacity: 0, y: 20, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
@@ -74,8 +75,13 @@ const ConnectedState = () => {
           </div>
         </div>
       </CardContent>
-      <CardFooter>
-        <Button onClick={disconnect} variant="outline" className="w-full font-semibold text-base py-6">
+      <CardFooter className="flex flex-col sm:flex-row gap-2">
+        <Button asChild className="w-full font-semibold text-base py-6">
+            <Link to="/dashboard">
+                View Dashboard <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+        </Button>
+        <Button onClick={disconnect} variant="secondary" className="w-full sm:w-auto font-semibold text-base py-6 px-6">
           Disconnect
         </Button>
       </CardFooter>
@@ -86,15 +92,17 @@ export function HomePage() {
   const authState = useAuthStore((s) => s.authState);
   return (
     <AppLayout>
-      <Card className="w-full max-w-md mx-auto shadow-xl rounded-2xl overflow-hidden border-border/50">
-        <div className="min-h-[480px] flex items-center justify-center p-6 md:p-8">
-          <AnimatePresence mode="wait">
-            {authState === 'disconnected' && <DisconnectedState />}
-            {authState === 'connecting' && <ConnectingState />}
-            {authState === 'connected' && <ConnectedState />}
-          </AnimatePresence>
-        </div>
-      </Card>
+      <main className="flex items-center justify-center min-h-screen bg-gradient-subtle p-4">
+        <Card className="w-full max-w-md mx-auto shadow-xl rounded-2xl overflow-hidden border-border/50">
+          <div className="min-h-[520px] flex items-center justify-center p-6 md:p-8">
+            <AnimatePresence mode="wait">
+              {authState === 'disconnected' && <DisconnectedState />}
+              {authState === 'connecting' && <ConnectingState />}
+              {authState === 'connected' && <ConnectedState />}
+            </AnimatePresence>
+          </div>
+        </Card>
+      </main>
     </AppLayout>
   );
 }
