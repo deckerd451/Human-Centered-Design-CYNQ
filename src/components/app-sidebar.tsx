@@ -51,8 +51,8 @@ export function AppSidebar(): JSX.Element {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href="#"><Settings /> <span>Settings</span></a>
+              <SidebarMenuButton asChild isActive={location.pathname === '/settings'}>
+                <Link to="/settings"><Settings /> <span>Settings</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
