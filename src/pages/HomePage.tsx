@@ -1,65 +1,48 @@
-import { ArrowRight, BookCopy } from 'lucide-react';
-import { motion, Variants } from 'framer-motion';
-import { useAuthStore } from '@/stores/authStore';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Link } from 'react-router-dom';
 import NeuralBackground from '@/components/NeuralBackground';
-const cardVariants: Variants = {
-  initial: { opacity: 0, y: 20, scale: 0.98 },
-  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: "easeOut" } },
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { ArrowRight, Lightbulb, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { getIdeas } from '@/lib/apiClient';
+import { Idea } from '@/lib/types';
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
-const ConnectedProfile = () => {
-  const user = useAuthStore((s) => s.user);
-  if (!user) return null;
+const RecentIdeas = () => {
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    getIdeas().then(data => {
+      setIdeas(data.slice(0, 3)); // Show top 3 recent ideas
+      setLoading(false);
+    });
+  }, []);
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
   return (
-    <motion.div variants={cardVariants} initial="initial" animate="animate" className="w-full">
-      <CardHeader className="flex flex-col items-center text-center space-y-4">
-        <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
-          <AvatarImage src={user.avatarUrl} alt={user.name} />
-          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div>
-          <CardTitle className="text-2xl">{user.name}</CardTitle>
-          <CardDescription className="text-lg text-muted-foreground">@{user.username}</CardDescription>
+    <div className="space-y-4">
+      {ideas.map(idea => (
+        <div key={idea.id} className="p-4 border rounded-lg bg-background/50">
+          <h4 className="font-semibold">{idea.title}</h4>
+          <p className="text-sm text-muted-foreground truncate">{idea.description}</p>
         </div>
-      </CardHeader>
-      <CardContent className="text-center space-y-6">
-        <p className="text-foreground/90">{user.bio}</p>
-        <Separator />
-        <div className="flex justify-around">
-          <div className="text-center">
-            <p className="text-2xl font-bold">{user.repos}</p>
-            <p className="text-sm text-muted-foreground">Repositories</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">{user.followers.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground">Followers</p>
-          </div>
-          <div className="text-center">
-            <p className="text-2xl font-bold">{user.following.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground">Following</p>
-          </div>
-        </div>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
-            <Button asChild className="w-full font-semibold">
-                <Link to="/dashboard">
-                    View Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full font-semibold">
-                <Link to="/repositories">
-                    <BookCopy className="mr-2 h-4 w-4" /> View Repositories
-                </Link>
-            </Button>
-        </div>
-      </CardFooter>
-    </motion.div>
+      ))}
+    </div>
   );
 };
 export function HomePage() {
@@ -67,11 +50,58 @@ export function HomePage() {
     <AppLayout>
       <main className="relative flex items-center justify-center min-h-screen bg-background overflow-hidden p-4">
         <NeuralBackground />
-        <Card className="relative z-10 w-full max-w-md mx-auto shadow-xl rounded-2xl overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
-          <div className="min-h-[520px] flex items-center justify-center p-6 md:p-8">
-            <ConnectedProfile />
+        <div className="relative z-10 w-full max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <motion.div variants={cardVariants} initial="hidden" animate="visible" transition={{ delay: 0.1 }}>
+              <Card className="h-full shadow-xl rounded-2xl border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-2xl">
+                    <Lightbulb className="text-yellow-400" />
+                    Submit an Idea
+                  </CardTitle>
+                  <CardDescription>Have a brilliant idea? Share it with the community.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="idea-title">Idea Title</Label>
+                    <Input id="idea-title" placeholder="e.g., AI-Powered Code Reviewer" />
+                  </div>
+                  <div>
+                    <Label htmlFor="idea-description">Description</Label>
+                    <Textarea id="idea-description" placeholder="Describe your idea in a few sentences." />
+                  </div>
+                  <div>
+                    <Label htmlFor="idea-tags">Tags (comma-separated)</Label>
+                    <Input id="idea-tags" placeholder="e.g., AI, Developer Tools, SaaS" />
+                  </div>
+                  <Button className="w-full font-semibold">Submit Idea</Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+            <motion.div variants={cardVariants} initial="hidden" animate="visible" transition={{ delay: 0.2 }}>
+              <Card className="h-full shadow-xl rounded-2xl border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-2xl">
+                    <Search />
+                    Explore Ideas
+                  </CardTitle>
+                  <CardDescription>Discover inspiring projects and find teams to join.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <h3 className="mb-4 text-lg font-medium">Recently Added</h3>
+                    <RecentIdeas />
+                  </div>
+                  <Button asChild className="w-full font-semibold" variant="outline">
+                    <Link to="/search">
+                      Explore All Ideas <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
-        </Card>
+        </div>
       </main>
     </AppLayout>
   );

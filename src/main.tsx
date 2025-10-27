@@ -13,10 +13,12 @@ import '@/index.css'
 import { HomePage } from '@/pages/HomePage'
 import { DashboardPage } from '@/pages/DashboardPage';
 import { SettingsPage } from '@/pages/SettingsPage';
-import { RepositoriesPage } from '@/pages/RepositoriesPage';
-import { RepositoryDetailPage } from '@/pages/RepositoryDetailPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { SearchPage } from '@/pages/SearchPage';
+import { TeamBuilderPage } from '@/pages/TeamBuilderPage';
+import { LeaderboardPage } from '@/pages/LeaderboardPage';
+import { SynapsePage } from '@/pages/SynapsePage';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -34,13 +36,23 @@ const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
   },
   {
-    path: "/repositories",
-    element: <ProtectedRoute><RepositoriesPage /></ProtectedRoute>,
+    path: "/search",
+    element: <ProtectedRoute><SearchPage /></ProtectedRoute>,
     errorElement: <RouteErrorBoundary />,
   },
   {
-    path: "/repository/:repoName",
-    element: <ProtectedRoute><RepositoryDetailPage /></ProtectedRoute>,
+    path: "/team-builder",
+    element: <ProtectedRoute><TeamBuilderPage /></ProtectedRoute>,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/leaderboard",
+    element: <ProtectedRoute><LeaderboardPage /></ProtectedRoute>,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/synapse",
+    element: <ProtectedRoute><SynapsePage /></ProtectedRoute>,
     errorElement: <RouteErrorBoundary />,
   },
   {
