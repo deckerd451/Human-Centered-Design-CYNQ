@@ -15,30 +15,37 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { RepositoriesPage } from '@/pages/RepositoriesPage';
 import { RepositoryDetailPage } from '@/pages/RepositoryDetailPage';
+import { LoginPage } from '@/pages/LoginPage';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 const router = createBrowserRouter([
   {
+    path: "/login",
+    element: <LoginPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
     path: "/",
-    element: <HomePage />,
+    element: <ProtectedRoute><HomePage /></ProtectedRoute>,
     errorElement: <RouteErrorBoundary />,
   },
   {
     path: "/dashboard",
-    element: <DashboardPage />,
+    element: <ProtectedRoute><DashboardPage /></ProtectedRoute>,
     errorElement: <RouteErrorBoundary />,
   },
   {
     path: "/repositories",
-    element: <RepositoriesPage />,
+    element: <ProtectedRoute><RepositoriesPage /></ProtectedRoute>,
     errorElement: <RouteErrorBoundary />,
   },
   {
     path: "/repository/:repoName",
-    element: <RepositoryDetailPage />,
+    element: <ProtectedRoute><RepositoryDetailPage /></ProtectedRoute>,
     errorElement: <RouteErrorBoundary />,
   },
   {
     path: "/settings",
-    element: <SettingsPage />,
+    element: <ProtectedRoute><SettingsPage /></ProtectedRoute>,
     errorElement: <RouteErrorBoundary />,
   },
 ]);
