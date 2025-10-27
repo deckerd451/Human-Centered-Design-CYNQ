@@ -28,6 +28,24 @@ const mockUsers: User[] = [
     skills: ['Go', 'Python', 'Kubernetes'],
     interests: ['Distributed Systems', 'DevOps'],
   },
+  {
+    id: 'user-4',
+    name: 'Dana Designer',
+    username: 'dana_designer',
+    avatarUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
+    bio: 'Crafting beautiful and intuitive user experiences.',
+    skills: ['UI/UX Design', 'Figma', 'Prototyping', 'CSS'],
+    interests: ['Design Systems', 'Microinteractions'],
+  },
+  {
+    id: 'user-5',
+    name: 'Evan Engineer',
+    username: 'evan_engineer',
+    avatarUrl: 'https://randomuser.me/api/portraits/men/43.jpg',
+    bio: 'DevOps and cloud infrastructure specialist.',
+    skills: ['AWS', 'Docker', 'Kubernetes', 'Terraform'],
+    interests: ['Scalability', 'Site Reliability', 'Automation'],
+  },
 ];
 const mockIdeas: Idea[] = [
   {
@@ -38,6 +56,7 @@ const mockIdeas: Idea[] = [
     authorId: 'user-1',
     upvotes: 128,
     createdAt: '2 days ago',
+    skillsNeeded: ['Python', 'Machine Learning', 'Go'],
   },
   {
     id: 'idea-2',
@@ -47,6 +66,7 @@ const mockIdeas: Idea[] = [
     authorId: 'user-2',
     upvotes: 95,
     createdAt: '5 days ago',
+    skillsNeeded: ['TypeScript', 'Go', 'P2P Networking'],
   },
   {
     id: 'idea-3',
@@ -56,6 +76,7 @@ const mockIdeas: Idea[] = [
     authorId: 'user-2',
     upvotes: 210,
     createdAt: '1 week ago',
+    skillsNeeded: ['React', 'UI/UX Design', 'WebSockets'],
   },
   {
     id: 'idea-4',
@@ -65,6 +86,7 @@ const mockIdeas: Idea[] = [
     authorId: 'user-3',
     upvotes: 72,
     createdAt: '1 week ago',
+    skillsNeeded: ['React Native', 'UI/UX Design', 'Gamification'],
   },
 ];
 const mockTeams: Team[] = [
@@ -73,14 +95,21 @@ const mockTeams: Team[] = [
     name: 'Code-AI',
     mission: 'To revolutionize code reviews with artificial intelligence.',
     ideaId: 'idea-1',
-    members: ['user-1', 'user-3'],
+    members: ['user-1', 'user-3', 'user-5'],
   },
   {
     id: 'team-2',
     name: 'DesignVerse',
     mission: 'Building the next generation of collaborative design tools.',
     ideaId: 'idea-3',
-    members: ['user-2'],
+    members: ['user-2', 'user-4'],
+  },
+  {
+    id: 'team-3',
+    name: 'DecentraNet',
+    mission: 'Building the future of the decentralized web.',
+    ideaId: 'idea-2',
+    members: ['user-2', 'user-3'],
   },
 ];
 // Mock API Functions

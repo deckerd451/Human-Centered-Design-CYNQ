@@ -15,6 +15,7 @@ export interface Idea {
   authorId: string;
   upvotes: number;
   createdAt: string;
+  skillsNeeded: string[];
 }
 export interface Team {
   id: string;
