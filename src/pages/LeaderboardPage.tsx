@@ -1,24 +1,103 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy } from "lucide-react";
+import { Trophy, Lightbulb, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getLeaderboardData } from "@/lib/apiClient";
+import { User, Idea } from "@/lib/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+const LeaderboardSkeleton = () => (
+  <div className="space-y-4">
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="flex items-center gap-4">
+        <Skeleton className="h-12 w-12 rounded-full" />
+        <div className="space-y-2 flex-1">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
 export function LeaderboardPage() {
+  const [leaderboard, setLeaderboard] = useState<{ users: User[]; ideas: Idea[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    getLeaderboardData().then(data => {
+      setLeaderboard(data);
+      setLoading(false);
+    });
+  }, []);
   return (
     <AppLayout container>
-      <div className="flex flex-col items-center justify-center text-center min-h-[60vh]">
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <div className="mx-auto bg-primary/10 text-primary p-3 rounded-full mb-4">
-              <Trophy className="h-8 w-8" />
-            </div>
-            <CardTitle className="text-3xl">Leaderboard</CardTitle>
-            <CardDescription className="text-lg">See who's making an impact.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              A leaderboard showcasing the top innovators and most popular ideas is on its way. Check back soon!
-            </p>
-          </CardContent>
-        </Card>
+      <div className="space-y-8">
+        <header>
+          <h1 className="text-4xl font-bold tracking-tight">Leaderboard</h1>
+          <p className="text-lg text-muted-foreground">Recognizing top contributors and trending ideas.</p>
+        </header>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="text-yellow-500" />
+                Top Innovators
+              </CardTitle>
+              <CardDescription>The most active and skilled members of the community.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? <LeaderboardSkeleton /> : (
+                <ul className="space-y-4">
+                  {leaderboard?.users.map((user, index) => (
+                    <li key={user.id} className="flex items-center gap-4">
+                      <span className="text-lg font-bold text-muted-foreground w-6 text-center">{index + 1}</span>
+                      <Avatar className="h-12 w-12 border-2 border-muted">
+                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-semibold">{user.name}</p>
+                        <p className="text-sm text-muted-foreground">@{user.username}</p>
+                      </div>
+                      <Badge variant="secondary">{user.skills.length} Skills</Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="text-blue-500" />
+                Trending Ideas
+              </CardTitle>
+              <CardDescription>The most popular and upvoted ideas right now.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? <LeaderboardSkeleton /> : (
+                <ul className="space-y-4">
+                  {leaderboard?.ideas.map((idea, index) => (
+                    <li key={idea.id} className="flex items-start gap-4">
+                      <span className="text-lg font-bold text-muted-foreground w-6 text-center pt-1">{index + 1}</span>
+                      <div className="flex-1">
+                        <p className="font-semibold">{idea.title}</p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 text-yellow-500" />
+                            <span>{idea.upvotes} upvotes</span>
+                          </div>
+                          <span>•</span>
+                          <span>{idea.createdAt}</span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppLayout>
   );
