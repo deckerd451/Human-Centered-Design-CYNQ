@@ -1,4 +1,4 @@
-import { User, Idea, Team, ApiResponse } from '@shared/types';
+import { User, Idea, Team, ApiResponse, Comment } from '@shared/types';
 const handleResponse = async <T>(response: Response): Promise<T> => {
   const json: ApiResponse<T> = await response.json();
   if (!response.ok || !json.success) {
@@ -9,11 +9,11 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   }
   return json.data;
 };
-export const getIdeas = (): Promise<Idea[]> => 
+export const getIdeas = (): Promise<Idea[]> =>
   fetch('/api/ideas').then(res => handleResponse<Idea[]>(res));
-export const getTeams = (): Promise<Team[]> => 
+export const getTeams = (): Promise<Team[]> =>
   fetch('/api/teams').then(res => handleResponse<Team[]>(res));
-export const getUsers = (): Promise<User[]> => 
+export const getUsers = (): Promise<User[]> =>
   fetch('/api/users').then(res => handleResponse<User[]>(res));
 export const getLeaderboardData = (): Promise<{ users: User[], ideas: Idea[] }> =>
   fetch('/api/leaderboard').then(res => handleResponse<{ users: User[], ideas: Idea[] }>(res));
@@ -41,3 +41,11 @@ export const requestToJoinIdea = (ideaId: string, userId: string): Promise<Team>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId }),
   }).then(res => handleResponse<Team>(res));
+export const getComments = (ideaId: string): Promise<Comment[]> =>
+  fetch(`/api/ideas/${ideaId}/comments`).then(res => handleResponse<Comment[]>(res));
+export const postComment = (ideaId: string, commentData: { authorId: string; content: string }): Promise<Comment> =>
+  fetch(`/api/ideas/${ideaId}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(commentData),
+  }).then(res => handleResponse<Comment>(res));
