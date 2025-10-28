@@ -23,6 +23,7 @@ export interface Idea {
   upvotes: number;
   createdAt: string; // ISO 8601 date string
   skillsNeeded: string[];
+  repoUrl?: string;
 }
 export interface Team {
   id: string;
