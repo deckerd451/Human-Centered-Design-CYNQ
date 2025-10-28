@@ -87,7 +87,8 @@ function runSetupCommands() {
     "bun install reactflow",
     "bun install @xyflow/react",
     "bun uninstall reactflow react-flow",
-    "bun add @supabase/supabase-js"
+    "bun add @supabase/supabase-js",
+    "bun install @xyflow/react"
 ];
     
     if (commands.length === 0) {
