@@ -1,11 +1,10 @@
 // Making changes to this file is **STRICTLY** forbidden. Please add your routes in `userRoutes.ts` file.
-
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { userRoutes } from './userRoutes';
 import { Env, GlobalDurableObject } from './core-utils';
-
+import { configureStaticAssets } from './static-assets';
 // Need to export GlobalDurableObject to make it available in wrangler
 export { GlobalDurableObject };
 export interface ClientErrorReport {
@@ -23,15 +22,11 @@ export interface ClientErrorReport {
     error?: unknown;
   }
 const app = new Hono<{ Bindings: Env }>();
-
 app.use('*', logger());
-
 // **DO NOT TOUCH THE CODE BELOW THIS LINE**
 app.use('/api/*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowHeaders: ['Content-Type', 'Authorization'] }));
-
 userRoutes(app);
 app.get('/api/health', (c) => c.json({ success: true, data: { status: 'healthy', timestamp: new Date().toISOString() }}));
-
 app.post('/api/client-errors', async (c) => {
   try {
     const e = await c.req.json<ClientErrorReport>();
@@ -43,8 +38,8 @@ app.post('/api/client-errors', async (c) => {
     return c.json({ success: false, error: 'Failed to process' }, 500);
   }
 });
-
+// Serve static assets for the frontend
+configureStaticAssets(app);
 app.notFound((c) => c.json({ success: false, error: 'Not Found' }, 404));
 app.onError((err, c) => { console.error(`[ERROR] ${err}`); return c.json({ success: false, error: 'Internal Server Error' }, 500); });
-
 export default { fetch: app.fetch } satisfies ExportedHandler<Env>;
