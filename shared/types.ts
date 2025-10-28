@@ -6,6 +6,12 @@ export interface User {
   bio: string;
   skills: string[];
   interests: string[];
+  githubUsername?: string;
+  githubStats?: {
+    repos: number;
+    followers: number;
+    following: number;
+  };
 }
 export interface Idea {
   id: string;

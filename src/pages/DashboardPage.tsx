@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/stores/authStore";
-import { Lightbulb, Users, Edit, Loader2 } from "lucide-react";
+import { Lightbulb, Users, Edit, Loader2, GitBranch, Star, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { getIdeas, getTeams } from "@/lib/apiClient";
@@ -17,6 +17,7 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Toaster, toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
   bio: z.string().min(10, "Bio must be at least 10 characters.").max(160, "Bio must not exceed 160 characters."),
@@ -107,6 +108,25 @@ const EditProfileDialog = ({ user, onUpdate }: { user: User; onUpdate: (data: Pa
     </Dialog>
   );
 };
+const GithubStats = ({ stats, username }: { stats: NonNullable<User['githubStats']>; username: string }) => (
+  <div>
+    <h3 className="text-lg font-semibold mb-2">GitHub Stats</h3>
+    <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+      <a href={`https://github.com/${username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-foreground">
+        <GitBranch className="h-4 w-4" />
+        <span>{stats.repos} Repos</span>
+      </a>
+      <a href={`https://github.com/${username}?tab=followers`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-foreground">
+        <Heart className="h-4 w-4" />
+        <span>{stats.followers} Followers</span>
+      </a>
+      <a href={`https://github.com/${username}?tab=following`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-foreground">
+        <Star className="h-4 w-4" />
+        <span>{stats.following} Following</span>
+      </a>
+    </div>
+  </div>
+);
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
@@ -158,7 +178,7 @@ export function DashboardPage() {
               <p className="mt-2 text-foreground/90 max-w-prose">{user.bio}</p>
             </div>
           </CardHeader>
-          <CardContent className="p-6 border-t">
+          <CardContent className="p-6 border-t space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-semibold mb-2">Skills</h3>
@@ -173,6 +193,12 @@ export function DashboardPage() {
                 </div>
               </div>
             </div>
+            {user.githubUsername && user.githubStats && (
+              <>
+                <Separator />
+                <GithubStats stats={user.githubStats} username={user.githubUsername} />
+              </>
+            )}
           </CardContent>
         </Card>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
