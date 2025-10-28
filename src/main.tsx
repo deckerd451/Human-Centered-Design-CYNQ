@@ -19,6 +19,7 @@ import { SearchPage } from '@/pages/SearchPage';
 import { TeamBuilderPage } from '@/pages/TeamBuilderPage';
 import { LeaderboardPage } from '@/pages/LeaderboardPage';
 import { SynapsePage } from '@/pages/SynapsePage';
+import { IdeaDetailPage } from '@/pages/IdeaDetailPage';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -48,6 +49,11 @@ const router = createBrowserRouter([
   {
     path: "/leaderboard",
     element: <ProtectedRoute><LeaderboardPage /></ProtectedRoute>,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/idea/:ideaId",
+    element: <ProtectedRoute><IdeaDetailPage /></ProtectedRoute>,
     errorElement: <RouteErrorBoundary />,
   },
   {

@@ -51,7 +51,7 @@ const mockIdeas: Idea[] = [
   {
     id: 'idea-1',
     title: 'AI-Powered Code Review Assistant',
-    description: 'An intelligent assistant that automatically reviews pull requests, suggests improvements, and identifies potential bugs.',
+    description: 'An intelligent assistant that automatically reviews pull requests, suggests improvements, and identifies potential bugs. It integrates with GitHub, GitLab, and Bitbucket to provide seamless feedback within the developer workflow. The AI model is trained on a massive dataset of open-source code to understand context, coding patterns, and best practices.',
     tags: ['AI', 'Developer Tools', 'Productivity'],
     authorId: 'user-1',
     upvotes: 128,
@@ -61,7 +61,7 @@ const mockIdeas: Idea[] = [
   {
     id: 'idea-2',
     title: 'Decentralized Social Media Platform',
-    description: 'A social network where users own their data and content, built on a peer-to-peer network.',
+    description: 'A social network where users own their data and content, built on a peer-to-peer network. It aims to create a censorship-resistant environment where creators are directly rewarded for their contributions through a native token economy.',
     tags: ['Web3', 'Social Media', 'Decentralization'],
     authorId: 'user-2',
     upvotes: 95,
@@ -71,7 +71,7 @@ const mockIdeas: Idea[] = [
   {
     id: 'idea-3',
     title: 'Real-time Collaborative Design Tool',
-    description: 'A web-based design tool like Figma, but with a focus on real-time collaboration and version control for design systems.',
+    description: 'A web-based design tool like Figma, but with a focus on real-time collaboration and version control for design systems. It will feature component-based design, live multiplayer editing, and powerful developer handoff tools.',
     tags: ['Design', 'SaaS', 'Collaboration'],
     authorId: 'user-2',
     upvotes: 210,
@@ -81,7 +81,7 @@ const mockIdeas: Idea[] = [
   {
     id: 'idea-4',
     title: 'Gamified Language Learning App',
-    description: 'An app that uses game mechanics and storytelling to make learning a new language more engaging and effective.',
+    description: 'An app that uses game mechanics and storytelling to make learning a new language more engaging and effective. Users embark on an epic quest where they learn vocabulary and grammar by completing challenges and interacting with characters.',
     tags: ['Education', 'Mobile', 'Gamification'],
     authorId: 'user-3',
     upvotes: 72,
@@ -123,3 +123,17 @@ export const getLeaderboardData = (): Promise<{ users: User[], ideas: Idea[] }> 
     users: mockUsers.sort((a, b) => b.skills.length - a.skills.length),
     ideas: mockIdeas.sort((a, b) => b.upvotes - a.upvotes),
   });
+export const getIdeaById = (id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[] } | null> => {
+  const idea = mockIdeas.find(i => i.id === id);
+  if (!idea) {
+    return simulateDelay(null, 200);
+  }
+  const author = mockUsers.find(u => u.id === idea.authorId);
+  if (!author) {
+    // This case should ideally not happen with consistent mock data
+    return simulateDelay(null, 200);
+  }
+  const team = mockTeams.find(t => t.ideaId === id);
+  const teamMembers = team ? team.members.map(memberId => mockUsers.find(u => u.id === memberId)).filter(Boolean) as User[] : [];
+  return simulateDelay({ idea, author, team, teamMembers }, 700);
+};
