@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "@/components/ui/sonner";
 import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2, Check, X, UserCheck } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getIdeaById, upvoteIdea, requestToJoinIdea, getComments, postComment, getUsers, acceptJoinRequest, declineJoinRequest } from "@/lib/apiClient";
 import { Idea, Team, User, Comment } from "@shared/types";
@@ -17,30 +17,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { useData } from "@/hooks/useData";
 const commentSchema = z.object({
   content: z.string().min(1, "Comment cannot be empty.").max(500, "Comment is too long."),
 });
 type CommentFormData = z.infer<typeof commentSchema>;
 const CommentsSection = ({ ideaId }: { ideaId: string }) => {
   const currentUser = useAuthStore((s) => s.user);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const { data: comments, isLoading: isLoadingComments, refetch: refetchComments } = useData(
+    ['comments', ideaId],
+    () => getComments(ideaId)
+  );
+  const { data: users, isLoading: isLoadingUsers } = useData(['users'], getUsers);
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<CommentFormData>({
     resolver: zodResolver(commentSchema),
   });
-  useEffect(() => {
-    Promise.all([getComments(ideaId), getUsers()]).then(([commentsData, usersData]) => {
-      setComments(commentsData);
-      setUsers(usersData);
-      setLoading(false);
-    }).catch(err => {
-      console.error("Failed to load comments:", err);
-      toast.error("Could not load comments.");
-      setLoading(false);
-    });
-  }, [ideaId]);
   const commentAuthors = useMemo(() => {
+    if (!users) return new Map();
     return new Map(users.map(user => [user.id, user]));
   }, [users]);
   const onSubmit: SubmitHandler<CommentFormData> = async (data) => {
@@ -49,9 +43,10 @@ const CommentsSection = ({ ideaId }: { ideaId: string }) => {
       return;
     }
     try {
-      const newComment = await postComment(ideaId, { authorId: currentUser.id, content: data.content });
-      setComments(prev => [...prev, newComment]);
+      await postComment(ideaId, { authorId: currentUser.id, content: data.content });
       reset();
+      await refetchComments();
+      commentInputRef.current?.focus();
     } catch (error) {
       toast.error("Failed to post comment. Please try again.");
     }
@@ -65,9 +60,9 @@ const CommentsSection = ({ ideaId }: { ideaId: string }) => {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
-          {loading ? (
+          {isLoadingComments || isLoadingUsers ? (
             <p>Loading comments...</p>
-          ) : comments.length > 0 ? (
+          ) : comments && comments.length > 0 ? (
             comments.map(comment => {
               const author = commentAuthors.get(comment.authorId);
               return (
@@ -97,7 +92,11 @@ const CommentsSection = ({ ideaId }: { ideaId: string }) => {
               <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <Textarea placeholder="Add to the discussion..." {...register('content')} />
+              <Textarea
+                ref={commentInputRef}
+                placeholder="Add to the discussion..."
+                {...register('content')}
+              />
               {errors.content && <p className="text-sm text-red-500 mt-1">{errors.content.message}</p>}
             </div>
             <Button type="submit" size="icon" disabled={isSubmitting}>

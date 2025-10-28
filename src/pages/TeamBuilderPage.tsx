@@ -150,9 +150,18 @@ export function TeamBuilderPage() {
     return Array.from(skills).sort();
   }, [ideas]);
   const filteredIdeas = useMemo(() => {
-    if (activeSkills.size === 0) return ideas;
-    return ideas.filter(idea => Array.from(activeSkills).every(skill => idea.skillsNeeded.includes(skill)));
-  }, [ideas, activeSkills]);
+    return ideas.filter(idea => {
+      // Exclude user's own ideas
+      if (currentUser && idea.authorId === currentUser.id) {
+        return false;
+      }
+      // Filter by active skills
+      if (activeSkills.size === 0) {
+        return true;
+      }
+      return Array.from(activeSkills).every(skill => idea.skillsNeeded.includes(skill));
+    });
+  }, [ideas, activeSkills, currentUser]);
   const handleSkillToggle = (skill: string) => {
     setActiveSkills(prev => {
       const newSkills = new Set(prev);

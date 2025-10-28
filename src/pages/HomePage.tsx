@@ -8,14 +8,14 @@ import { Label } from '@/components/ui/label';
 import { ArrowRight, Lightbulb, Search, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import { getIdeas, addIdea } from '@/lib/apiClient';
-import { Idea } from '@shared/types';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Toaster, toast } from 'sonner';
 import { useAuthStore } from '@/stores/authStore';
+import { getIdeas, addIdea } from '@/lib/apiClient';
+import { Idea } from '@shared/types';
+import { useData } from '@/hooks/useData';
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
@@ -27,20 +27,8 @@ const ideaSchema = z.object({
   skillsNeeded: z.string().min(1, 'Please list at least one skill.'),
 });
 type IdeaFormData = z.infer<typeof ideaSchema>;
-const RecentIdeas = ({ refreshKey }: { refreshKey: number }) => {
-  const [ideas, setIdeas] = useState<Idea[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    setLoading(true);
-    getIdeas().then(data => {
-      setIdeas(data.slice(0, 3)); // Show top 3 recent ideas
-      setLoading(false);
-    }).catch(err => {
-      console.error("Failed to load recent ideas:", err);
-      setLoading(false);
-    });
-  }, [refreshKey]);
-  if (loading) {
+const RecentIdeas = ({ ideas, isLoading }: { ideas?: Idea[]; isLoading: boolean }) => {
+  if (isLoading) {
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
@@ -51,7 +39,7 @@ const RecentIdeas = ({ refreshKey }: { refreshKey: number }) => {
   }
   return (
     <div className="space-y-4">
-      {ideas.map(idea => (
+      {ideas?.slice(0, 3).map(idea => (
         <Link to={`/idea/${idea.id}`} key={idea.id} className="block p-4 border rounded-lg bg-background/50 hover:border-primary/50 transition-colors">
           <h4 className="font-semibold">{idea.title}</h4>
           <p className="text-sm text-muted-foreground truncate">{idea.description}</p>
@@ -61,8 +49,8 @@ const RecentIdeas = ({ refreshKey }: { refreshKey: number }) => {
   );
 };
 export function HomePage() {
-  const [refreshKey, setRefreshKey] = useState(0);
   const user = useAuthStore((s) => s.user);
+  const { data: ideas, isLoading: isLoadingIdeas, refetch: refetchIdeas } = useData(['ideas'], getIdeas);
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<IdeaFormData>({
     resolver: zodResolver(ideaSchema),
   });
@@ -82,7 +70,7 @@ export function HomePage() {
       await addIdea(newIdeaData);
       toast.success("Your idea has been submitted successfully!");
       reset();
-      setRefreshKey(prev => prev + 1);
+      refetchIdeas();
     } catch (error) {
       toast.error("Failed to submit idea. Please try again.");
     }
@@ -145,7 +133,7 @@ export function HomePage() {
                 <CardContent className="space-y-6">
                   <div>
                     <h3 className="mb-4 text-lg font-medium">Recently Added</h3>
-                    <RecentIdeas refreshKey={refreshKey} />
+                    <RecentIdeas ideas={ideas} isLoading={isLoadingIdeas} />
                   </div>
                   <Button asChild className="w-full font-semibold" variant="outline">
                     <Link to="/search">
