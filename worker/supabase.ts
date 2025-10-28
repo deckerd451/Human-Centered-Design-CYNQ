@@ -1,19 +1,41 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { User, Idea, Team, Comment, Notification } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { Env } from './core-utils';
-const getSupabaseClient = (env: Env): SupabaseClient => {
-  if (!env.SUPABASE_URL || !env.SUPABASE_KEY) {
-    throw new Error('Supabase URL and Key must be provided in environment variables.');
+interface SupabaseFetchOptions {
+  table: string;
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  body?: object | null;
+  query?: string;
+  rpc?: boolean;
+}
+const supabaseFetch = async (env: Env, { table, method = 'GET', body = null, query = '', rpc = false }: SupabaseFetchOptions) => {
+  const url = rpc
+    ? `${env.SUPABASE_URL}/rpc/${table}`
+    : `${env.SUPABASE_URL}/rest/v1/${table}${query}`;
+  const options: RequestInit = {
+    method,
+    headers: {
+      'apikey': env.SUPABASE_KEY,
+      'Authorization': `Bearer ${env.SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  };
+  if (body) {
+    options.body = JSON.stringify(body);
   }
-  return createClient(env.SUPABASE_URL, env.SUPABASE_KEY, {
-    auth: {
-      persistSession: false,
-    },
-    global: {
-      fetch: fetch,
-    },
-  });
+  if (method !== 'GET') {
+    (options.headers as Record<string, string>)['Prefer'] = 'return=representation';
+  }
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Supabase fetch error: ${response.status} ${response.statusText}`, { url, errorText });
+    throw new Error(`Supabase request failed: ${errorText}`);
+  }
+  if (response.status === 204) { // No Content
+    return null;
+  }
+  return response.json();
 };
 const handleError = (error: any, context: string) => {
   console.error(`Supabase error in ${context}:`, error);
@@ -28,51 +50,72 @@ export const sendMagicLink = async (env: Env, email: string): Promise<{ success:
 export const verifyMagicToken = async (env: Env, token: string): Promise<User | null> => {
   if (token.startsWith('demo-token-for-')) {
     const email = token.replace('demo-token-for-', '');
-    const { data: users, error } = await getSupabaseClient(env).from('users').select('*').eq('email', email).limit(1);
-    if (error) handleError(error, 'verifyMagicToken');
-    return users?.[0] || null;
+    try {
+      const users: User[] = await supabaseFetch(env, { table: 'users', query: `?select=*&email=eq.${email}&limit=1` });
+      return users?.[0] || null;
+    } catch (error) {
+      handleError(error, 'verifyMagicToken');
+      return null;
+    }
   }
   return null;
 };
 export const getUsers = async (env: Env): Promise<User[]> => {
-  const { data, error } = await getSupabaseClient(env).from('users').select('*');
-  if (error) handleError(error, 'getUsers');
-  return data || [];
+  try {
+    return await supabaseFetch(env, { table: 'users', query: '?select=*' });
+  } catch (error) {
+    handleError(error, 'getUsers');
+    return [];
+  }
 };
 export const updateUser = async (env: Env, userId: string, updates: Partial<User>): Promise<User | null> => {
-  const { data, error } = await getSupabaseClient(env).from('users').update(updates).eq('id', userId).select();
-  if (error) handleError(error, 'updateUser');
-  return data?.[0] || null;
+  try {
+    const data: User[] = await supabaseFetch(env, {
+      table: 'users',
+      method: 'PATCH',
+      body: updates,
+      query: `?id=eq.${userId}`,
+    });
+    return data?.[0] || null;
+  } catch (error) {
+    handleError(error, 'updateUser');
+    return null;
+  }
 };
 // Idea Functions
 export const getIdeas = async (env: Env): Promise<Idea[]> => {
-  const { data, error } = await getSupabaseClient(env).from('ideas').select('*').order('created_at', { ascending: false });
-  if (error) handleError(error, 'getIdeas');
-  return (data || []).map(idea => ({ ...idea, createdAt: idea.created_at }));
+  try {
+    const data: any[] = await supabaseFetch(env, { table: 'ideas', query: '?select=*&order=created_at.desc' });
+    return (data || []).map(idea => ({ ...idea, createdAt: idea.created_at }));
+  } catch (error) {
+    handleError(error, 'getIdeas');
+    return [];
+  }
 };
 export const getIdeaById = async (env: Env, id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null> => {
-  const { data: ideaData, error: ideaError } = await getSupabaseClient(env).from('ideas').select('*').eq('id', id).single();
-  if (ideaError || !ideaData) {
-    if (ideaError && ideaError.code !== 'PGRST116') handleError(ideaError, `getIdeaById (idea ${id})`);
+  try {
+    const ideaData: any[] = await supabaseFetch(env, { table: 'ideas', query: `?select=*&id=eq.${id}` });
+    if (!ideaData || ideaData.length === 0) return null;
+    const idea = { ...ideaData[0], createdAt: ideaData[0].created_at };
+    const authorData: User[] = await supabaseFetch(env, { table: 'users', query: `?select=*&id=eq.${idea.authorId}` });
+    const author = authorData[0];
+    const teamData: Team[] = await supabaseFetch(env, { table: 'teams', query: `?select=*&ideaId=eq.${id}` });
+    const team = teamData?.[0];
+    const memberIds = team?.members || [];
+    const requesterIds = team?.joinRequests || [];
+    const allUserIds = [...new Set([...memberIds, ...requesterIds])];
+    let teamMembers: User[] = [];
+    let joinRequesters: User[] = [];
+    if (allUserIds.length > 0) {
+      const users: User[] = await supabaseFetch(env, { table: 'users', query: `?select=*&id=in.(${allUserIds.join(',')})` });
+      teamMembers = users?.filter(u => memberIds.includes(u.id)) || [];
+      joinRequesters = users?.filter(u => requesterIds.includes(u.id)) || [];
+    }
+    return { idea, author, team, teamMembers, joinRequesters };
+  } catch (error) {
+    handleError(error, `getIdeaById (id: ${id})`);
     return null;
   }
-  const idea = { ...ideaData, createdAt: ideaData.created_at };
-  const { data: author, error: authorError } = await getSupabaseClient(env).from('users').select('*').eq('id', idea.authorId).single();
-  if (authorError) handleError(authorError, `getIdeaById (author ${idea.authorId})`);
-  const { data: team, error: teamError } = await getSupabaseClient(env).from('teams').select('*').eq('ideaId', id).single();
-  if (teamError && teamError.code !== 'PGRST116') handleError(teamError, `getIdeaById (team for idea ${id})`);
-  const memberIds = team?.members || [];
-  const requesterIds = team?.joinRequests || [];
-  const allUserIds = [...new Set([...memberIds, ...requesterIds])];
-  let teamMembers: User[] = [];
-  let joinRequesters: User[] = [];
-  if (allUserIds.length > 0) {
-    const { data: users, error: usersError } = await getSupabaseClient(env).from('users').select('*').in('id', allUserIds);
-    if (usersError) handleError(usersError, `getIdeaById (fetching team users)`);
-    teamMembers = users?.filter(u => memberIds.includes(u.id)) || [];
-    joinRequesters = users?.filter(u => requesterIds.includes(u.id)) || [];
-  }
-  return { idea, author, team, teamMembers, joinRequesters };
 };
 export const addIdea = async (env: Env, ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>): Promise<Idea> => {
   const newIdea = {
@@ -88,82 +131,128 @@ export const addIdea = async (env: Env, ideaData: Omit<Idea, 'id' | 'createdAt' 
       ],
     },
   };
-  const { data, error } = await getSupabaseClient(env).from('ideas').insert(newIdea).select();
-  if (error) handleError(error, 'addIdea');
-  const result = data?.[0];
-  return { ...result, createdAt: result.created_at };
+  try {
+    const data: any[] = await supabaseFetch(env, { table: 'ideas', method: 'POST', body: newIdea });
+    const result = data?.[0];
+    return { ...result, createdAt: result.created_at };
+  } catch (error) {
+    handleError(error, 'addIdea');
+    throw error;
+  }
 };
 export const updateIdea = async (env: Env, id: string, updates: Partial<Idea>): Promise<Idea | null> => {
-  const { data, error } = await getSupabaseClient(env).from('ideas').update(updates).eq('id', id).select();
-  if (error) handleError(error, 'updateIdea');
-  const result = data?.[0];
-  return result ? { ...result, createdAt: result.created_at } : null;
-};
-export const deleteIdea = async (env: Env, id: string): Promise<void> => {
-  await getSupabaseClient(env).from('comments').delete().eq('ideaId', id);
-  await getSupabaseClient(env).from('teams').delete().eq('ideaId', id);
-  await getSupabaseClient(env).from('notifications').delete().like('link', `%${id}%`);
-  const { error } = await getSupabaseClient(env).from('ideas').delete().eq('id', id);
-  if (error) handleError(error, 'deleteIdea');
-};
-export const upvoteIdea = async (env: Env, ideaId: string): Promise<Idea | null> => {
-    const { data, error } = await getSupabaseClient(env).rpc('increment_upvotes', { idea_id: ideaId });
-    if (error) handleError(error, 'upvoteIdea');
+  try {
+    const data: any[] = await supabaseFetch(env, { table: 'ideas', method: 'PATCH', body: updates, query: `?id=eq.${id}` });
     const result = data?.[0];
     return result ? { ...result, createdAt: result.created_at } : null;
+  } catch (error) {
+    handleError(error, 'updateIdea');
+    return null;
+  }
+};
+export const deleteIdea = async (env: Env, id: string): Promise<void> => {
+  try {
+    await supabaseFetch(env, { table: 'comments', method: 'DELETE', query: `?ideaId=eq.${id}` });
+    await supabaseFetch(env, { table: 'teams', method: 'DELETE', query: `?ideaId=eq.${id}` });
+    await supabaseFetch(env, { table: 'notifications', method: 'DELETE', query: `?link=like.*${id}*` });
+    await supabaseFetch(env, { table: 'ideas', method: 'DELETE', query: `?id=eq.${id}` });
+  } catch (error) {
+    handleError(error, 'deleteIdea');
+  }
+};
+export const upvoteIdea = async (env: Env, ideaId: string): Promise<Idea | null> => {
+  try {
+    const data: any[] = await supabaseFetch(env, { table: 'increment_upvotes', method: 'POST', body: { idea_id: ideaId }, rpc: true });
+    const result = data?.[0];
+    return result ? { ...result, createdAt: result.created_at } : null;
+  } catch (error) {
+    handleError(error, 'upvoteIdea');
+    return null;
+  }
 };
 // Team Functions
 export const getTeams = async (env: Env): Promise<Team[]> => {
-  const { data, error } = await getSupabaseClient(env).from('teams').select('*');
-  if (error) handleError(error, 'getTeams');
-  return data || [];
+  try {
+    return await supabaseFetch(env, { table: 'teams', query: '?select=*' });
+  } catch (error) {
+    handleError(error, 'getTeams');
+    return [];
+  }
 };
 export const requestToJoinIdea = async (env: Env, ideaId: string, userId: string): Promise<Team> => {
-    const { data, error } = await getSupabaseClient(env).rpc('request_to_join', { p_idea_id: ideaId, p_user_id: userId });
-    if (error) handleError(error, 'requestToJoinIdea');
-    return data?.[0] || null;
+  try {
+    const data: Team[] = await supabaseFetch(env, { table: 'request_to_join', method: 'POST', body: { p_idea_id: ideaId, p_user_id: userId }, rpc: true });
+    return data?.[0];
+  } catch (error) {
+    handleError(error, 'requestToJoinIdea');
+    throw error;
+  }
 };
 export const acceptJoinRequest = async (env: Env, ideaId: string, userId: string): Promise<Team | null> => {
-    const { data, error } = await getSupabaseClient(env).rpc('accept_join_request', { p_idea_id: ideaId, p_user_id: userId });
-    if (error) handleError(error, 'acceptJoinRequest');
-    return data?.[0] || null;
+  try {
+    const data: Team[] = await supabaseFetch(env, { table: 'accept_join_request', method: 'POST', body: { p_idea_id: ideaId, p_user_id: userId }, rpc: true });
+    return data?.[0];
+  } catch (error) {
+    handleError(error, 'acceptJoinRequest');
+    return null;
+  }
 };
 export const declineJoinRequest = async (env: Env, ideaId: string, userId: string): Promise<Team | null> => {
-    const { data, error } = await getSupabaseClient(env).rpc('decline_join_request', { p_idea_id: ideaId, p_user_id: userId });
-    if (error) handleError(error, 'declineJoinRequest');
-    return data?.[0] || null;
+  try {
+    const data: Team[] = await supabaseFetch(env, { table: 'decline_join_request', method: 'POST', body: { p_idea_id: ideaId, p_user_id: userId }, rpc: true });
+    return data?.[0];
+  } catch (error) {
+    handleError(error, 'declineJoinRequest');
+    return null;
+  }
 };
 // Comment Functions
 export const getCommentsForIdea = async (env: Env, ideaId: string): Promise<Comment[]> => {
-  const { data, error } = await getSupabaseClient(env).from('comments').select('*').eq('ideaId', ideaId).order('created_at', { ascending: true });
-  if (error) handleError(error, 'getCommentsForIdea');
-  return (data || []).map(c => ({ ...c, createdAt: c.created_at }));
+  try {
+    const data: any[] = await supabaseFetch(env, { table: 'comments', query: `?select=*&ideaId=eq.${ideaId}&order=created_at.asc` });
+    return (data || []).map(c => ({ ...c, createdAt: c.created_at }));
+  } catch (error) {
+    handleError(error, 'getCommentsForIdea');
+    return [];
+  }
 };
 export const addComment = async (env: Env, commentData: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> => {
   const newComment = { ...commentData, id: uuidv4(), created_at: new Date().toISOString() };
-  const { data, error } = await getSupabaseClient(env).from('comments').insert(newComment).select();
-  if (error) handleError(error, 'addComment');
-  const result = data?.[0];
-  return { ...result, createdAt: result.created_at };
+  try {
+    const data: any[] = await supabaseFetch(env, { table: 'comments', method: 'POST', body: newComment });
+    const result = data?.[0];
+    return { ...result, createdAt: result.created_at };
+  } catch (error) {
+    handleError(error, 'addComment');
+    throw error;
+  }
 };
 // Notification Functions
 export const getNotificationsForUser = async (env: Env, userId: string): Promise<Notification[]> => {
-  const { data, error } = await getSupabaseClient(env).from('notifications').select('*').eq('userId', userId).order('created_at', { ascending: false });
-  if (error) handleError(error, 'getNotificationsForUser');
-  return (data || []).map(n => ({ ...n, createdAt: n.created_at }));
+  try {
+    const data: any[] = await supabaseFetch(env, { table: 'notifications', query: `?select=*&userId=eq.${userId}&order=created_at.desc` });
+    return (data || []).map(n => ({ ...n, createdAt: n.created_at }));
+  } catch (error) {
+    handleError(error, 'getNotificationsForUser');
+    return [];
+  }
 };
 export const markNotificationsAsRead = async (env: Env, userId: string, notificationIds: string[]): Promise<void> => {
-  const { error } = await getSupabaseClient(env).from('notifications').update({ read: true }).eq('userId', userId).in('id', notificationIds);
-  if (error) handleError(error, 'markNotificationsAsRead');
+  try {
+    await supabaseFetch(env, { table: 'notifications', method: 'PATCH', body: { read: true }, query: `?userId=eq.${userId}&id=in.(${notificationIds.join(',')})` });
+  } catch (error) {
+    handleError(error, 'markNotificationsAsRead');
+  }
 };
 // Leaderboard Function
 export const getLeaderboardData = async (env: Env): Promise<{ users: User[], ideas: Idea[] }> => {
-  const { data: users, error: usersError } = await getSupabaseClient(env).from('users').select('*').limit(5); // Simplified logic
-  if (usersError) handleError(usersError, 'getLeaderboardData (users)');
-  const { data: ideas, error: ideasError } = await getSupabaseClient(env).from('ideas').select('*').order('upvotes', { ascending: false }).limit(5);
-  if (ideasError) handleError(ideasError, 'getLeaderboardData (ideas)');
-  return {
-    users: users || [],
-    ideas: (ideas || []).map(idea => ({ ...idea, createdAt: idea.created_at })),
-  };
+  try {
+    const users: User[] = await supabaseFetch(env, { table: 'users', query: '?select=*&limit=5' }); // Simplified logic
+    const ideasData: any[] = await supabaseFetch(env, { table: 'ideas', query: '?select=*&order=upvotes.desc&limit=5' });
+    const ideas = (ideasData || []).map(idea => ({ ...idea, createdAt: idea.created_at }));
+    return { users: users || [], ideas };
+  } catch (error) {
+    handleError(error, 'getLeaderboardData');
+    return { users: [], ideas: [] };
+  }
 };
