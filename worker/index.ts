@@ -42,8 +42,8 @@ app.post('/api/client-errors', async (c) => {
   }
 });
 // Serve static assets for the frontend
-app.get('/assets/*', serveStatic({ root: './dist/client', manifest }));
-app.get('*', serveStatic({ path: './dist/client/index.html', manifest }));
+app.get('/assets/*', serveStatic({ root: './', manifest }));
+app.get('*', serveStatic({ path: './index.html', manifest }));
 app.notFound((c) => c.json({ success: false, error: 'Not Found' }, 404));
 app.onError((err, c) => { console.error(`[ERROR] ${err}`); return c.json({ success: false, error: 'Internal Server Error' }, 500); });
 export default { fetch: app.fetch } satisfies ExportedHandler<Env>;
