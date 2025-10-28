@@ -105,7 +105,8 @@ function runSetupCommands() {
     "rm worker/static-assets.ts",
     "rm worker/static-assets.ts",
     "ls -R dist",
-    "ls -RF"
+    "ls -RF",
+    "bun install"
 ];
     
     if (commands.length === 0) {
