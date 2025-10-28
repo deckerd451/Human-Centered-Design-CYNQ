@@ -99,7 +99,8 @@ function runSetupCommands() {
     "rm -rf src/pages/DemoPage.tsx",
     "rm -rf shared/mock-data.ts",
     "bun install",
-    "bun add uuid @types/uuid"
+    "bun add uuid @types/uuid",
+    "curl -s https://8001-bb3be49e-249b-4eef-ad30-a83135515dee-sxjpod7japw1do82.build-preview.cloudflare.dev/api/health"
 ];
     
     if (commands.length === 0) {
