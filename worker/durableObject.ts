@@ -59,4 +59,10 @@ export class GlobalDurableObject extends DurableObject {
     async markNotificationsAsRead(userId: string, notificationIds: string[]): Promise<void> {
         return this.supabase.markNotificationsAsRead(userId, notificationIds);
     }
+    async updateIdea(id: string, updates: Partial<Idea>): Promise<Idea | null> {
+        return this.supabase.updateIdea(id, updates);
+    }
+    async deleteIdea(id: string): Promise<void> {
+        return this.supabase.deleteIdea(id);
+    }
 }
