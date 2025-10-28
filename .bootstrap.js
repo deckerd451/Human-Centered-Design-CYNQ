@@ -84,7 +84,9 @@ function runSetupCommands() {
     "rm -rf src/pages/RepositoryDetailPage.tsx",
     "rm -rf src/lib/types.ts",
     "rm -rf src/pages/DemoPage.tsx",
-    "bun install reactflow"
+    "bun install reactflow",
+    "bun install @xyflow/react",
+    "bun uninstall reactflow react-flow"
 ];
     
     if (commands.length === 0) {
