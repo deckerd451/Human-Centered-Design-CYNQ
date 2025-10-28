@@ -1,13 +1,7 @@
 import { Hono } from "hono";
-import { serveStatic } from 'hono/cloudflare-workers';
-// @ts-expect-error - this is a virtual module
-import manifest from '__STATIC_CONTENT_MANIFEST';
-
 import { Env } from './core-utils';
 import type { ApiResponse, Idea, Team, User, Comment, Notification } from '@shared/types';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
-
-
     // API routes
     app.get('/api/ideas', async (c) => {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
@@ -144,7 +138,4 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         await stub.deleteIdea(id);
         return c.json({ success: true }, 200);
     });
-
-    app.get('*', serveStatic({ root: './dist/client', manifest }));
-
 }

@@ -2,9 +2,11 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { serveStatic } from 'hono/cloudflare-workers';
+// @ts-expect-error - this is a virtual module
+import manifest from '__STATIC_CONTENT_MANIFEST';
 import { userRoutes } from './userRoutes';
 import { Env, GlobalDurableObject } from './core-utils';
-import { configureStaticAssets } from './static-assets';
 // Need to export GlobalDurableObject to make it available in wrangler
 export { GlobalDurableObject };
 export interface ClientErrorReport {
@@ -20,11 +22,12 @@ export interface ClientErrorReport {
     lineno?: number;
     colno?: number;
     error?: unknown;
-  }
+}
 const app = new Hono<{ Bindings: Env }>();
 app.use('*', logger());
 // **DO NOT TOUCH THE CODE BELOW THIS LINE**
 app.use('/api/*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowHeaders: ['Content-Type', 'Authorization'] }));
+// API Routes
 userRoutes(app);
 app.get('/api/health', (c) => c.json({ success: true, data: { status: 'healthy', timestamp: new Date().toISOString() }}));
 app.post('/api/client-errors', async (c) => {
@@ -39,7 +42,8 @@ app.post('/api/client-errors', async (c) => {
   }
 });
 // Serve static assets for the frontend
-configureStaticAssets(app);
+app.get('/assets/*', serveStatic({ root: './dist/client', manifest }));
+app.get('*', serveStatic({ path: './dist/client/index.html', manifest }));
 app.notFound((c) => c.json({ success: false, error: 'Not Found' }, 404));
 app.onError((err, c) => { console.error(`[ERROR] ${err}`); return c.json({ success: false, error: 'Internal Server Error' }, 500); });
 export default { fetch: app.fetch } satisfies ExportedHandler<Env>;
