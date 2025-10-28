@@ -1,12 +1,13 @@
 import { create } from 'zustand';
-import { User } from '@/lib/types';
+import { User } from '@shared/types';
+import { updateCurrentUser } from '@/lib/apiClient';
 type AuthState = 'disconnected' | 'connecting' | 'connected';
 interface AuthStore {
   authState: AuthState;
   user: User | null;
   login: () => void;
   logout: () => void;
-  updateUser: (data: Partial<User>) => void;
+  updateUser: (data: Partial<User>) => Promise<void>;
 }
 const mockUser: User = {
   id: 'user-1',
@@ -17,7 +18,7 @@ const mockUser: User = {
   skills: ['React', 'TypeScript', 'Node.js', 'Cloudflare Workers', 'Go'],
   interests: ['AI/ML', 'Decentralized Systems', 'UX Design'],
 };
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   authState: 'disconnected',
   user: null,
   login: () => {
@@ -29,9 +30,24 @@ export const useAuthStore = create<AuthStore>((set) => ({
   logout: () => {
     set({ authState: 'disconnected', user: null });
   },
-  updateUser: (data) => {
-    set((state) => ({
-      user: state.user ? { ...state.user, ...data } : null,
-    }));
+  updateUser: async (data) => {
+    const currentUser = get().user;
+    if (!currentUser) {
+      throw new Error("User not authenticated");
+    }
+    // Optimistic update
+    const previousUser = currentUser;
+    set({ user: { ...currentUser, ...data } });
+    try {
+      // Persist changes to the backend
+      const updatedUser = await updateCurrentUser(currentUser.id, data);
+      // Sync with the backend response
+      set({ user: updatedUser });
+    } catch (error) {
+      console.error("Failed to update user profile:", error);
+      // Rollback on failure
+      set({ user: previousUser });
+      throw error; // Re-throw to be caught by the form handler
+    }
   },
 }));

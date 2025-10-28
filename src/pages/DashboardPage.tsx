@@ -7,7 +7,7 @@ import { Lightbulb, Users, Edit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { getIdeas, getTeams } from "@/lib/apiClient";
-import { Idea, Team, User } from "@/lib/types";
+import { Idea, Team, User } from "@shared/types";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ const profileSchema = z.object({
   interests: z.string().min(1, "Please list at least one interest."),
 });
 type ProfileFormData = z.infer<typeof profileSchema>;
-const EditProfileDialog = ({ user, onUpdate }: { user: User; onUpdate: (data: Partial<User>) => void }) => {
+const EditProfileDialog = ({ user, onUpdate }: { user: User; onUpdate: (data: Partial<User>) => Promise<void> }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -41,10 +41,13 @@ const EditProfileDialog = ({ user, onUpdate }: { user: User; onUpdate: (data: Pa
       skills: data.skills.split(',').map(s => s.trim()).filter(Boolean),
       interests: data.interests.split(',').map(i => i.trim()).filter(Boolean),
     };
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-    onUpdate(updatedData);
-    toast.success("Profile updated successfully!");
-    setIsOpen(false);
+    try {
+      await onUpdate(updatedData);
+      toast.success("Profile updated successfully!");
+      setIsOpen(false);
+    } catch (error) {
+      toast.error("Failed to update profile. Please try again.");
+    }
   };
   useEffect(() => {
     if (isOpen) {
@@ -118,6 +121,10 @@ export function DashboardPage() {
         setAllIdeas(allIdeasData);
         setMyIdeas(allIdeasData.filter(idea => idea.authorId === user.id));
         setMyTeams(allTeams.filter(team => team.members.includes(user.id)));
+        setLoading(false);
+      }).catch(err => {
+        console.error("Failed to load dashboard data:", err);
+        toast.error("Could not load your data. Please refresh.");
         setLoading(false);
       });
     }
