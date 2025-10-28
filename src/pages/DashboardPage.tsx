@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { getIdeas, getTeams } from "@/lib/apiClient";
 import { Idea, Team } from "@/lib/types";
+import { Link } from "react-router-dom";
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [myIdeas, setMyIdeas] = useState<Idea[]>([]);
@@ -77,8 +78,14 @@ export function DashboardPage() {
             </CardHeader>
             <CardContent>
               {loading ? <p>Loading ideas...</p> : myIdeas.length > 0 ? (
-                <ul className="space-y-3">
-                  {myIdeas.map(idea => <li key={idea.id} className="p-3 border rounded-md bg-muted/50">{idea.title}</li>)}
+                <ul className="space-y-2">
+                  {myIdeas.map(idea => (
+                    <li key={idea.id}>
+                      <Link to={`/idea/${idea.id}`} className="block p-3 -mx-3 border border-transparent rounded-md bg-muted/50 hover:bg-muted hover:border-border transition-colors font-medium">
+                        {idea.title}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               ) : <p className="text-muted-foreground">You haven't submitted any ideas yet.</p>}
             </CardContent>
