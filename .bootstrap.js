@@ -91,7 +91,8 @@ function runSetupCommands() {
     "bun install @xyflow/react",
     "rm -rf worker/supabaseClient.ts",
     "rm -rf src/pages/DemoPage.tsx",
-    "bun add node-fetch"
+    "bun add node-fetch",
+    "bun remove @supabase/supabase-js node-fetch"
 ];
     
     if (commands.length === 0) {
