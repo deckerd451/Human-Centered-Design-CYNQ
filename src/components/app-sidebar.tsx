@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, User, Search, Users, Trophy, BrainCircuit, LifeBuoy, Settings } from "lucide-react";
+import { Home, User, Search, Users, Trophy, BrainCircuit, LifeBuoy, Settings, PlusCircle } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -13,6 +13,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/stores/authStore";
+import { Button } from "./ui/button";
 export function AppSidebar(): JSX.Element {
   const location = useLocation();
   const authState = useAuthStore((s) => s.authState);
@@ -26,6 +27,16 @@ export function AppSidebar(): JSX.Element {
         </div>
       </SidebarHeader>
       <SidebarContent>
+        {isConnected && (
+          <div className="px-4 py-2">
+            <Button asChild className="w-full">
+              <Link to="/">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create Idea
+              </Link>
+            </Button>
+          </div>
+        )}
         <SidebarGroup>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -81,7 +92,7 @@ export function AppSidebar(): JSX.Element {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="px-2 text-xs text-muted-foreground">Built with ��️ at Cloudflare</div>
+        <div className="px-2 text-xs text-muted-foreground">Built with ❤️ at Cloudflare</div>
       </SidebarFooter>
     </Sidebar>
   );

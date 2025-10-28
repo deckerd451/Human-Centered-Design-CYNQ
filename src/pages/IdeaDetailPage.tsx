@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "@/components/ui/sonner";
-import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2, Check, X, UserCheck } from "lucide-react";
+import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2, Check, X, UserCheck, GitBranch, Heart, Star } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getIdeaById, upvoteIdea, requestToJoinIdea, getComments, postComment, getUsers, acceptJoinRequest, declineJoinRequest } from "@/lib/apiClient";
@@ -16,8 +16,8 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { useData } from "@/hooks/useData";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 const commentSchema = z.object({
   content: z.string().min(1, "Comment cannot be empty.").max(500, "Comment is too long."),
 });
@@ -309,8 +309,8 @@ export function IdeaDetailPage() {
               <CardHeader>
                 <CardTitle>Description</CardTitle>
               </CardHeader>
-              <CardContent className="prose dark:prose-invert max-w-none text-foreground/90">
-                <p>{idea.description}</p>
+              <CardContent>
+                <MarkdownRenderer content={idea.description} />
               </CardContent>
             </Card>
             <Card>
@@ -342,6 +342,32 @@ export function IdeaDetailPage() {
                 </div>
               </CardContent>
             </Card>
+            {author.githubUsername && author.githubStats && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Author Stats</CardTitle>
+                  <CardDescription>
+                    <a href={`https://github.com/${author.githubUsername}`} target="_blank" rel="noopener noreferrer" className="hover:underline text-primary">
+                      @{author.githubUsername}
+                    </a>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <GitBranch className="h-4 w-4" />
+                    <span>{author.githubStats.repos} Repositories</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Heart className="h-4 w-4" />
+                    <span>{author.githubStats.followers} Followers</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Star className="h-4 w-4" />
+                    <span>{author.githubStats.following} Following</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
