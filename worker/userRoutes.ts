@@ -115,6 +115,16 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         }
         return c.json({ success: true, data } satisfies ApiResponse<User>);
     });
+    app.put('/api/ideas/:id', async (c) => {
+        const id = c.req.param('id');
+        const body = await c.req.json<Partial<Idea>>();
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.updateIdea(id, body);
+        if (!data) {
+            return c.json({ success: false, error: 'Idea not found or update failed' }, 404);
+        }
+        return c.json({ success: true, data } satisfies ApiResponse<Idea>);
+    });
     app.put('/api/ideas/:id/upvote', async (c) => {
         const id = c.req.param('id');
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
@@ -143,5 +153,12 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
         await stub.markNotificationsAsRead(userId, notificationIds);
         return c.json({ success: true });
+    });
+    // DELETE a resource
+    app.delete('/api/ideas/:id', async (c) => {
+        const id = c.req.param('id');
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        await stub.deleteIdea(id);
+        return c.json({ success: true }, 204);
     });
 }

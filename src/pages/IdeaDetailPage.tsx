@@ -6,22 +6,34 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "@/components/ui/sonner";
-import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2, Check, X, UserCheck, GitBranch, Heart, Star } from "lucide-react";
+import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2, Check, X, UserCheck, GitBranch, Heart, Star, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
-import { getIdeaById, upvoteIdea, requestToJoinIdea, getComments, postComment, getUsers, acceptJoinRequest, declineJoinRequest } from "@/lib/apiClient";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { getIdeaById, upvoteIdea, requestToJoinIdea, getComments, postComment, getUsers, acceptJoinRequest, declineJoinRequest, updateIdea, deleteIdea } from "@/lib/apiClient";
 import { Idea, Team, User, Comment } from "@shared/types";
 import { useAuthStore } from "@/stores/authStore";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useData } from "@/hooks/useData";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 const commentSchema = z.object({
   content: z.string().min(1, "Comment cannot be empty.").max(500, "Comment is too long."),
 });
 type CommentFormData = z.infer<typeof commentSchema>;
+const ideaEditSchema = z.object({
+  title: z.string().min(5, 'Title must be at least 5 characters long.'),
+  description: z.string().min(20, 'Description must be at least 20 characters long.'),
+  tags: z.string().min(1, 'Please add at least one tag.'),
+  skillsNeeded: z.string().min(1, 'Please list at least one skill.'),
+});
+type IdeaEditFormData = z.infer<typeof ideaEditSchema>;
 const CommentsSection = ({ ideaId }: { ideaId: string }) => {
   const currentUser = useAuthStore((s) => s.user);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -193,11 +205,17 @@ const IdeaDetailSkeleton = () => (
 );
 export function IdeaDetailPage() {
   const { ideaId } = useParams<{ ideaId: string }>();
+  const navigate = useNavigate();
   const currentUser = useAuthStore((s) => s.user);
   const [data, setData] = useState<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [isUpvoted, setIsUpvoted] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { register, handleSubmit, formState: { errors, isSubmitting: isSubmittingEdit }, reset } = useForm<IdeaEditFormData>({
+    resolver: zodResolver(ideaEditSchema),
+  });
   useEffect(() => {
     if (ideaId) {
       setLoading(true);
@@ -205,6 +223,12 @@ export function IdeaDetailPage() {
         if (result) {
           setData(result);
           setNotFound(false);
+          reset({
+            title: result.idea.title,
+            description: result.idea.description,
+            tags: result.idea.tags.join(', '),
+            skillsNeeded: result.idea.skillsNeeded.join(', '),
+          });
         } else {
           setNotFound(true);
         }
@@ -215,7 +239,7 @@ export function IdeaDetailPage() {
         setLoading(false);
       });
     }
-  }, [ideaId]);
+  }, [ideaId, reset]);
   const handleJoinRequest = async () => {
     if (!ideaId || !currentUser) return;
     try {
@@ -254,6 +278,34 @@ export function IdeaDetailPage() {
       };
     });
   };
+  const onEditSubmit: SubmitHandler<IdeaEditFormData> = async (formData) => {
+    if (!ideaId) return;
+    try {
+      const updatedData = {
+        title: formData.title,
+        description: formData.description,
+        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        skillsNeeded: formData.skillsNeeded.split(',').map(skill => skill.trim()).filter(Boolean),
+      };
+      const updatedIdea = await updateIdea(ideaId, updatedData);
+      setData(prevData => prevData ? { ...prevData, idea: updatedIdea } : null);
+      toast.success("Idea updated successfully!");
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      toast.error("Failed to update idea.");
+    }
+  };
+  const handleDelete = async () => {
+    if (!ideaId) return;
+    try {
+      await deleteIdea(ideaId);
+      toast.success("Idea deleted successfully.");
+      navigate('/search');
+    } catch (error) {
+      toast.error("Failed to delete idea.");
+      setIsDeleteDialogOpen(false);
+    }
+  };
   if (loading) {
     return <AppLayout container><IdeaDetailSkeleton /></AppLayout>;
   }
@@ -284,10 +336,31 @@ export function IdeaDetailPage() {
       <Toaster />
       <div className="space-y-8">
         <header className="space-y-2">
-          <Link to="/search" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to ideas
-          </Link>
+          <div className="flex justify-between items-start">
+            <Link to="/search" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to ideas
+            </Link>
+            {isAuthor && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setIsEditDialogOpen(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    <span>Edit Idea</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} className="text-red-500">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    <span>Delete Idea</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
           <h1 className="text-4xl font-bold tracking-tight">{idea.title}</h1>
           <div className="flex items-center gap-4 text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -411,6 +484,61 @@ export function IdeaDetailPage() {
           </div>
         </div>
       </div>
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Idea</DialogTitle>
+            <DialogDescription>Make changes to your idea here. Click save when you're done.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onEditSubmit)} className="grid gap-4 py-4">
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" {...register('title')} />
+              {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" {...register('description')} />
+              {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="tags">Tags (comma-separated)</Label>
+              <Input id="tags" {...register('tags')} />
+              {errors.tags && <p className="text-sm text-red-500 mt-1">{errors.tags.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="skillsNeeded">Skills Needed (comma-separated)</Label>
+              <Input id="skillsNeeded" {...register('skillsNeeded')} />
+              {errors.skillsNeeded && <p className="text-sm text-red-500 mt-1">{errors.skillsNeeded.message}</p>}
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">Cancel</Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSubmittingEdit}>
+                {isSubmittingEdit && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your idea and remove all associated data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Yes, delete idea
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

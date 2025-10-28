@@ -365,4 +365,22 @@ export class SupabaseClient {
       }
     });
   }
+  async updateIdea(id: string, updates: Partial<Idea>): Promise<Idea | null> {
+    const ideaIndex = this.ideas.findIndex(i => i.id === id);
+    if (ideaIndex === -1) return null;
+    // Ensure non-updatable fields are not changed
+    const { id: _, authorId, createdAt, upvotes, ...restOfUpdates } = updates;
+    this.ideas[ideaIndex] = { ...this.ideas[ideaIndex], ...restOfUpdates };
+    return this.ideas[ideaIndex];
+  }
+  async deleteIdea(id: string): Promise<void> {
+    const initialIdeaCount = this.ideas.length;
+    this.ideas = this.ideas.filter(i => i.id !== id);
+    if (this.ideas.length < initialIdeaCount) {
+      // If an idea was deleted, clean up related data
+      this.comments = this.comments.filter(c => c.ideaId !== id);
+      this.teams = this.teams.filter(t => t.ideaId !== id);
+      this.notifications = this.notifications.filter(n => !n.link.includes(`/idea/${id}`));
+    }
+  }
 }

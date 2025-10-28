@@ -86,3 +86,13 @@ export const declineJoinRequest = (ideaId: string, userId: string): Promise<Team
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId }),
   }).then(res => handleResponse<Team>(res));
+export const updateIdea = (ideaId: string, updates: Partial<Omit<Idea, 'id' | 'createdAt' | 'authorId' | 'upvotes'>>): Promise<Idea> =>
+  fetch(`/api/ideas/${ideaId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  }).then(res => handleResponse<Idea>(res));
+export const deleteIdea = (ideaId: string): Promise<void> =>
+  fetch(`/api/ideas/${ideaId}`, {
+    method: 'DELETE',
+  }).then(res => handleResponse<void>(res));
