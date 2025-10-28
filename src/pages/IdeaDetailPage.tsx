@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "@/components/ui/sonner";
 import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2, Check, X, UserCheck, GitBranch, Heart, Star, MoreHorizontal, Edit, Trash2, Link as LinkIcon } from "lucide-react";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getIdeaById, upvoteIdea, requestToJoinIdea, getComments, postComment, getUsers, acceptJoinRequest, declineJoinRequest, updateIdea, deleteIdea } from "@/lib/apiClient";
 import { Idea, Team, User, Comment } from "@shared/types";
@@ -193,14 +193,18 @@ const TeamManagementCard = ({ ideaId, requesters, onUpdateRequest }: { ideaId: s
     </Card>
   );
 };
-const LinkRepoCard = ({ ideaId }: { ideaId: string }) => {
-  const linkRepoToIdea = useAuthStore(s => s.linkRepoToIdea);
+const LinkRepoCard = ({ ideaId, onRepoLink }: { ideaId: string; onRepoLink: () => void }) => {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RepoLinkFormData>({
     resolver: zodResolver(repoLinkSchema),
   });
-  const onSubmit: SubmitHandler<RepoLinkFormData> = (data) => {
-    linkRepoToIdea(ideaId, data.repoUrl);
-    toast.success("Repository linked successfully!");
+  const onSubmit: SubmitHandler<RepoLinkFormData> = async (data) => {
+    try {
+      await updateIdea(ideaId, { repoUrl: data.repoUrl });
+      toast.success("Repository linked successfully!");
+      onRepoLink();
+    } catch (error) {
+      toast.error("Failed to link repository.");
+    }
   };
   return (
     <Card>
@@ -244,7 +248,6 @@ export function IdeaDetailPage() {
   const { ideaId } = useParams<{ ideaId: string }>();
   const navigate = useNavigate();
   const currentUser = useAuthStore((s) => s.user);
-  const linkedRepos = useAuthStore(s => s.user?.linkedRepos);
   const [data, setData] = useState<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -254,7 +257,7 @@ export function IdeaDetailPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting: isSubmittingEdit }, reset } = useForm<IdeaEditFormData>({
     resolver: zodResolver(ideaEditSchema),
   });
-  useEffect(() => {
+  const fetchIdeaData = useCallback(() => {
     if (ideaId) {
       setLoading(true);
       getIdeaById(ideaId).then(result => {
@@ -270,14 +273,17 @@ export function IdeaDetailPage() {
         } else {
           setNotFound(true);
         }
-        setLoading(false);
       }).catch(err => {
         console.error("Failed to load idea details:", err);
         setNotFound(true);
+      }).finally(() => {
         setLoading(false);
       });
     }
   }, [ideaId, reset]);
+  useEffect(() => {
+    fetchIdeaData();
+  }, [fetchIdeaData]);
   const handleJoinRequest = async () => {
     if (!ideaId || !currentUser) return;
     try {
@@ -369,7 +375,6 @@ export function IdeaDetailPage() {
   const isUserInTeam = currentUser && teamMembers.some(member => member.id === currentUser.id);
   const hasPendingRequest = currentUser && (team?.joinRequests || []).includes(currentUser.id);
   const isAuthor = currentUser && currentUser.id === author.id;
-  const repoUrl = linkedRepos?.get(ideaId);
   return (
     <AppLayout container>
       <Toaster />
@@ -417,8 +422,8 @@ export function IdeaDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6">
             {isAuthor && <TeamManagementCard ideaId={ideaId} requesters={joinRequesters} onUpdateRequest={handleTeamUpdate} />}
-            {isAuthor && <LinkRepoCard ideaId={ideaId} />}
-            <ProjectBoard idea={idea} repoUrl={repoUrl} />
+            {isAuthor && <LinkRepoCard ideaId={ideaId} onRepoLink={fetchIdeaData} />}
+            <ProjectBoard idea={idea} onBoardUpdate={fetchIdeaData} />
             <Card>
               <CardHeader>
                 <CardTitle>Description</CardTitle>

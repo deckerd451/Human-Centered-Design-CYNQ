@@ -14,6 +14,15 @@ export interface User {
     following: number;
   };
 }
+export interface Task {
+  id: string;
+  content: string;
+}
+export interface BoardColumn {
+  id: string;
+  title: string;
+  tasks: Task[];
+}
 export interface Idea {
   id: string;
   title: string;
@@ -24,6 +33,9 @@ export interface Idea {
   createdAt: string; // ISO 8601 date string
   skillsNeeded: string[];
   repoUrl?: string;
+  projectBoard?: {
+    columns: BoardColumn[];
+  };
 }
 export interface Team {
   id: string;

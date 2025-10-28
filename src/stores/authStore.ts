@@ -2,12 +2,9 @@ import { create } from 'zustand';
 import { User } from '@shared/types';
 import { updateCurrentUser, sendMagicLink as apiSendMagicLink, verifyMagicToken } from '@/lib/apiClient';
 type AuthState = 'disconnected' | 'awaitingMagicLink' | 'authenticating' | 'connected';
-interface UserWithLocalData extends User {
-  linkedRepos: Map<string, string>;
-}
 interface AuthStore {
   authState: AuthState;
-  user: UserWithLocalData | null;
+  user: User | null;
   magicLinkToken: string | null;
   sendMagicLink: (email: string) => Promise<void>;
   verifyTokenAndLogin: (token: string) => Promise<void>;
@@ -15,7 +12,6 @@ interface AuthStore {
   updateUser: (data: Partial<User>) => Promise<void>;
   connectGitHub: () => Promise<void>;
   disconnectGitHub: () => void;
-  linkRepoToIdea: (ideaId: string, repoUrl: string) => void;
 }
 export const useAuthStore = create<AuthStore>((set, get) => ({
   authState: 'disconnected',
@@ -29,7 +25,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ authState: 'authenticating' });
     try {
       const user = await verifyMagicToken(token);
-      set({ authState: 'connected', user: { ...user, linkedRepos: new Map() }, magicLinkToken: null });
+      set({ authState: 'connected', user, magicLinkToken: null });
     } catch (error) {
       console.error("Magic link verification failed:", error);
       set({ authState: 'disconnected', user: null, magicLinkToken: null });
@@ -79,16 +75,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (state.user) {
         const { githubUsername, githubStats, ...rest } = state.user;
         return { user: rest };
-      }
-      return {};
-    });
-  },
-  linkRepoToIdea: (ideaId: string, repoUrl: string) => {
-    set(state => {
-      if (state.user) {
-        const newLinkedRepos = new Map(state.user.linkedRepos);
-        newLinkedRepos.set(ideaId, repoUrl);
-        return { user: { ...state.user, linkedRepos: newLinkedRepos } };
       }
       return {};
     });
