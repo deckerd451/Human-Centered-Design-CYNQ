@@ -159,6 +159,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const id = c.req.param('id');
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
         await stub.deleteIdea(id);
-        return c.json({ success: true }, 204);
+        return c.json({ success: true }, 200);
     });
 }
