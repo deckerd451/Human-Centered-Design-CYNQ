@@ -2,22 +2,18 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { User, Idea, Team, Comment, Notification } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { Env } from './core-utils';
-let supabase: SupabaseClient;
-const getSupabaseClient = (env: Env) => {
+const getSupabaseClient = (env: Env): SupabaseClient => {
   if (!env.SUPABASE_URL || !env.SUPABASE_KEY) {
     throw new Error('Supabase URL and Key must be provided in environment variables.');
   }
-  if (!supabase) {
-    supabase = createClient(env.SUPABASE_URL, env.SUPABASE_KEY, {
-      auth: {
-        persistSession: false,
-      },
-      global: {
-        fetch: fetch,
-      },
-    });
-  }
-  return supabase;
+  return createClient(env.SUPABASE_URL, env.SUPABASE_KEY, {
+    auth: {
+      persistSession: false,
+    },
+    global: {
+      fetch: fetch,
+    },
+  });
 };
 const handleError = (error: any, context: string) => {
   console.error(`Supabase error in ${context}:`, error);
