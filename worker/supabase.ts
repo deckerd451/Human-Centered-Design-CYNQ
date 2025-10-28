@@ -1,6 +1,6 @@
 import { User, Idea, Team, Comment, Notification } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
-import { Env } from './core-utils';
+import { Env, SanitizedEnv } from './core-utils';
 interface SupabaseFetchOptions {
   table: string;
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -8,7 +8,7 @@ interface SupabaseFetchOptions {
   query?: string;
   rpc?: boolean;
 }
-const supabaseFetch = async <T>(env: Env, { table, method = 'GET', body = null, query = '', rpc = false }: SupabaseFetchOptions): Promise<T> => {
+const supabaseFetch = async <T>(env: SanitizedEnv, { table, method = 'GET', body = null, query = '', rpc = false }: SupabaseFetchOptions): Promise<T> => {
   const url = rpc
     ? `${env.SUPABASE_URL}/rpc/${table}`
     : `${env.SUPABASE_URL}/rest/v1/${table}${query}`;
@@ -42,12 +42,12 @@ const handleError = (error: any, context: string) => {
   throw new Error(`Database operation failed: ${context}`);
 };
 // User Functions
-export const sendMagicLink = async (env: Env, email: string): Promise<{ success: boolean; token?: string }> => {
+export const sendMagicLink = async (env: SanitizedEnv, email: string): Promise<{ success: boolean; token?: string }> => {
   console.log(`Simulating magic link for ${email}`);
   const token = `demo-token-for-${email}`;
   return { success: true, token };
 };
-export const verifyMagicToken = async (env: Env, token: string): Promise<User | null> => {
+export const verifyMagicToken = async (env: SanitizedEnv, token: string): Promise<User | null> => {
   if (token.startsWith('demo-token-for-')) {
     const email = token.replace('demo-token-for-', '');
     try {
@@ -60,7 +60,7 @@ export const verifyMagicToken = async (env: Env, token: string): Promise<User | 
   }
   return null;
 };
-export const getUsers = async (env: Env): Promise<User[]> => {
+export const getUsers = async (env: SanitizedEnv): Promise<User[]> => {
   try {
     return await supabaseFetch<User[]>(env, { table: 'users', query: '?select=*' });
   } catch (error) {
@@ -68,7 +68,7 @@ export const getUsers = async (env: Env): Promise<User[]> => {
     return [];
   }
 };
-export const updateUser = async (env: Env, userId: string, updates: Partial<User>): Promise<User | null> => {
+export const updateUser = async (env: SanitizedEnv, userId: string, updates: Partial<User>): Promise<User | null> => {
   try {
     const data = await supabaseFetch<User[]>(env, {
       table: 'users',
@@ -83,7 +83,7 @@ export const updateUser = async (env: Env, userId: string, updates: Partial<User
   }
 };
 // Idea Functions
-export const getIdeas = async (env: Env): Promise<Idea[]> => {
+export const getIdeas = async (env: SanitizedEnv): Promise<Idea[]> => {
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'ideas', query: '?select=*&order=created_at.desc' });
     return (data || []).map(idea => ({ ...idea, createdAt: idea.created_at }));
@@ -92,7 +92,7 @@ export const getIdeas = async (env: Env): Promise<Idea[]> => {
     return [];
   }
 };
-export const getIdeaById = async (env: Env, id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null> => {
+export const getIdeaById = async (env: SanitizedEnv, id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null> => {
   try {
     const ideaData = await supabaseFetch<any[]>(env, { table: 'ideas', query: `?select=*&id=eq.${id}` });
     if (!ideaData || ideaData.length === 0) return null;
@@ -117,7 +117,7 @@ export const getIdeaById = async (env: Env, id: string): Promise<{ idea: Idea; a
     return null;
   }
 };
-export const addIdea = async (env: Env, ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>): Promise<Idea> => {
+export const addIdea = async (env: SanitizedEnv, ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>): Promise<Idea> => {
   const newIdea = {
     ...ideaData,
     id: uuidv4(),
@@ -140,7 +140,7 @@ export const addIdea = async (env: Env, ideaData: Omit<Idea, 'id' | 'createdAt' 
     throw error;
   }
 };
-export const updateIdea = async (env: Env, id: string, updates: Partial<Idea>): Promise<Idea | null> => {
+export const updateIdea = async (env: SanitizedEnv, id: string, updates: Partial<Idea>): Promise<Idea | null> => {
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'ideas', method: 'PATCH', body: updates, query: `?id=eq.${id}` });
     const result = data?.[0];
@@ -150,7 +150,7 @@ export const updateIdea = async (env: Env, id: string, updates: Partial<Idea>): 
     return null;
   }
 };
-export const deleteIdea = async (env: Env, id: string): Promise<void> => {
+export const deleteIdea = async (env: SanitizedEnv, id: string): Promise<void> => {
   try {
     await supabaseFetch(env, { table: 'comments', method: 'DELETE', query: `?ideaId=eq.${id}` });
     await supabaseFetch(env, { table: 'teams', method: 'DELETE', query: `?ideaId=eq.${id}` });
@@ -160,7 +160,7 @@ export const deleteIdea = async (env: Env, id: string): Promise<void> => {
     handleError(error, 'deleteIdea');
   }
 };
-export const upvoteIdea = async (env: Env, ideaId: string): Promise<Idea | null> => {
+export const upvoteIdea = async (env: SanitizedEnv, ideaId: string): Promise<Idea | null> => {
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'increment_upvotes', method: 'POST', body: { idea_id: ideaId }, rpc: true });
     const result = data?.[0];
@@ -171,7 +171,7 @@ export const upvoteIdea = async (env: Env, ideaId: string): Promise<Idea | null>
   }
 };
 // Team Functions
-export const getTeams = async (env: Env): Promise<Team[]> => {
+export const getTeams = async (env: SanitizedEnv): Promise<Team[]> => {
   try {
     return await supabaseFetch<Team[]>(env, { table: 'teams', query: '?select=*' });
   } catch (error) {
@@ -179,7 +179,7 @@ export const getTeams = async (env: Env): Promise<Team[]> => {
     return [];
   }
 };
-export const requestToJoinIdea = async (env: Env, ideaId: string, userId: string): Promise<Team> => {
+export const requestToJoinIdea = async (env: SanitizedEnv, ideaId: string, userId: string): Promise<Team> => {
   try {
     const data = await supabaseFetch<Team[]>(env, { table: 'request_to_join', method: 'POST', body: { p_idea_id: ideaId, p_user_id: userId }, rpc: true });
     return data?.[0];
@@ -188,7 +188,7 @@ export const requestToJoinIdea = async (env: Env, ideaId: string, userId: string
     throw error;
   }
 };
-export const acceptJoinRequest = async (env: Env, ideaId: string, userId: string): Promise<Team | null> => {
+export const acceptJoinRequest = async (env: SanitizedEnv, ideaId: string, userId: string): Promise<Team | null> => {
   try {
     const data = await supabaseFetch<Team[]>(env, { table: 'accept_join_request', method: 'POST', body: { p_idea_id: ideaId, p_user_id: userId }, rpc: true });
     return data?.[0];
@@ -197,7 +197,7 @@ export const acceptJoinRequest = async (env: Env, ideaId: string, userId: string
     return null;
   }
 };
-export const declineJoinRequest = async (env: Env, ideaId: string, userId: string): Promise<Team | null> => {
+export const declineJoinRequest = async (env: SanitizedEnv, ideaId: string, userId: string): Promise<Team | null> => {
   try {
     const data = await supabaseFetch<Team[]>(env, { table: 'decline_join_request', method: 'POST', body: { p_idea_id: ideaId, p_user_id: userId }, rpc: true });
     return data?.[0];
@@ -207,7 +207,7 @@ export const declineJoinRequest = async (env: Env, ideaId: string, userId: strin
   }
 };
 // Comment Functions
-export const getCommentsForIdea = async (env: Env, ideaId: string): Promise<Comment[]> => {
+export const getCommentsForIdea = async (env: SanitizedEnv, ideaId: string): Promise<Comment[]> => {
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'comments', query: `?select=*&ideaId=eq.${ideaId}&order=created_at.asc` });
     return (data || []).map(c => ({ ...c, createdAt: c.created_at }));
@@ -216,7 +216,7 @@ export const getCommentsForIdea = async (env: Env, ideaId: string): Promise<Comm
     return [];
   }
 };
-export const addComment = async (env: Env, commentData: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> => {
+export const addComment = async (env: SanitizedEnv, commentData: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> => {
   const newComment = { ...commentData, id: uuidv4(), created_at: new Date().toISOString() };
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'comments', method: 'POST', body: newComment });
@@ -228,7 +228,7 @@ export const addComment = async (env: Env, commentData: Omit<Comment, 'id' | 'cr
   }
 };
 // Notification Functions
-export const getNotificationsForUser = async (env: Env, userId: string): Promise<Notification[]> => {
+export const getNotificationsForUser = async (env: SanitizedEnv, userId: string): Promise<Notification[]> => {
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'notifications', query: `?select=*&userId=eq.${userId}&order=created_at.desc` });
     return (data || []).map(n => ({ ...n, createdAt: n.created_at }));
@@ -237,7 +237,7 @@ export const getNotificationsForUser = async (env: Env, userId: string): Promise
     return [];
   }
 };
-export const markNotificationsAsRead = async (env: Env, userId: string, notificationIds: string[]): Promise<void> => {
+export const markNotificationsAsRead = async (env: SanitizedEnv, userId: string, notificationIds: string[]): Promise<void> => {
   try {
     await supabaseFetch(env, { table: 'notifications', method: 'PATCH', body: { read: true }, query: `?userId=eq.${userId}&id=in.(${notificationIds.join(',')})` });
   } catch (error) {
@@ -245,7 +245,7 @@ export const markNotificationsAsRead = async (env: Env, userId: string, notifica
   }
 };
 // Leaderboard Function
-export const getLeaderboardData = async (env: Env): Promise<{ users: User[], ideas: Idea[] }> => {
+export const getLeaderboardData = async (env: SanitizedEnv): Promise<{ users: User[], ideas: Idea[] }> => {
   try {
     const users = await supabaseFetch<User[]>(env, { table: 'users', query: '?select=*&limit=5' }); // Simplified logic
     const ideasData = await supabaseFetch<any[]>(env, { table: 'ideas', query: '?select=*&order=upvotes.desc&limit=5' });
