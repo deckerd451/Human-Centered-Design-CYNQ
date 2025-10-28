@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import type { User, Idea, Team } from '@shared/types';
+import type { User, Idea, Team, Comment } from '@shared/types';
 // SEED DATA (moved from apiClient.ts)
 const SEED_USERS: User[] = [
   {
@@ -113,6 +113,29 @@ const SEED_TEAMS: Team[] = [
     members: ['user-2', 'user-3'],
   },
 ];
+const SEED_COMMENTS: Comment[] = [
+  {
+    id: 'comment-1',
+    ideaId: 'idea-1',
+    authorId: 'user-2',
+    content: 'This is a fantastic idea! I have some experience with ML models and would love to contribute.',
+    createdAt: '1 day ago',
+  },
+  {
+    id: 'comment-2',
+    ideaId: 'idea-1',
+    authorId: 'user-3',
+    content: 'How are you planning to handle the infrastructure for model training? Could be quite resource-intensive.',
+    createdAt: '22 hours ago',
+  },
+  {
+    id: 'comment-3',
+    ideaId: 'idea-2',
+    authorId: 'user-1',
+    content: 'Interesting concept. Have you thought about the moderation challenges in a decentralized system?',
+    createdAt: '3 days ago',
+  },
+];
 export class GlobalDurableObject extends DurableObject {
     async initializeData(): Promise<void> {
         const users = await this.ctx.storage.get("users");
@@ -120,6 +143,7 @@ export class GlobalDurableObject extends DurableObject {
             await this.ctx.storage.put("users", SEED_USERS);
             await this.ctx.storage.put("ideas", SEED_IDEAS);
             await this.ctx.storage.put("teams", SEED_TEAMS);
+            await this.ctx.storage.put("comments", SEED_COMMENTS);
         }
     }
     async getUsers(): Promise<User[]> {
@@ -133,6 +157,22 @@ export class GlobalDurableObject extends DurableObject {
     async getTeams(): Promise<Team[]> {
         await this.initializeData();
         return (await this.ctx.storage.get("teams")) || [];
+    }
+    async getCommentsForIdea(ideaId: string): Promise<Comment[]> {
+        await this.initializeData();
+        const allComments: Comment[] = (await this.ctx.storage.get("comments")) || [];
+        return allComments.filter(c => c.ideaId === ideaId).sort((a, b) => a.id.localeCompare(b.id));
+    }
+    async addComment(commentData: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> {
+        const allComments: Comment[] = (await this.ctx.storage.get("comments")) || [];
+        const newComment: Comment = {
+            ...commentData,
+            id: `comment-${Date.now()}`,
+            createdAt: 'Just now',
+        };
+        allComments.push(newComment);
+        await this.ctx.storage.put("comments", allComments);
+        return newComment;
     }
     async getIdeaById(id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[] } | null> {
         const ideas = await this.getIdeas();

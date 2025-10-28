@@ -6,12 +6,108 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "@/components/ui/sonner";
-import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getIdeaById, upvoteIdea, requestToJoinIdea } from "@/lib/apiClient";
-import { Idea, Team, User } from "@shared/types";
+import { getIdeaById, upvoteIdea, requestToJoinIdea, getComments, postComment, getUsers } from "@/lib/apiClient";
+import { Idea, Team, User, Comment } from "@shared/types";
 import { useAuthStore } from "@/stores/authStore";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Textarea } from "@/components/ui/textarea";
+const commentSchema = z.object({
+  content: z.string().min(1, "Comment cannot be empty.").max(500, "Comment is too long."),
+});
+type CommentFormData = z.infer<typeof commentSchema>;
+const CommentsSection = ({ ideaId }: { ideaId: string }) => {
+  const currentUser = useAuthStore((s) => s.user);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<CommentFormData>({
+    resolver: zodResolver(commentSchema),
+  });
+  useEffect(() => {
+    Promise.all([getComments(ideaId), getUsers()]).then(([commentsData, usersData]) => {
+      setComments(commentsData);
+      setUsers(usersData);
+      setLoading(false);
+    }).catch(err => {
+      console.error("Failed to load comments:", err);
+      toast.error("Could not load comments.");
+      setLoading(false);
+    });
+  }, [ideaId]);
+  const commentAuthors = useMemo(() => {
+    return new Map(users.map(user => [user.id, user]));
+  }, [users]);
+  const onSubmit: SubmitHandler<CommentFormData> = async (data) => {
+    if (!currentUser) {
+      toast.error("You must be logged in to comment.");
+      return;
+    }
+    try {
+      const newComment = await postComment(ideaId, { authorId: currentUser.id, content: data.content });
+      setComments(prev => [...prev, newComment]);
+      reset();
+    } catch (error) {
+      toast.error("Failed to post comment. Please try again.");
+    }
+  };
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <MessageSquare /> Discussion
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          {loading ? (
+            <p>Loading comments...</p>
+          ) : comments.length > 0 ? (
+            comments.map(comment => {
+              const author = commentAuthors.get(comment.authorId);
+              return (
+                <div key={comment.id} className="flex items-start gap-4">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={author?.avatarUrl} />
+                    <AvatarFallback>{author?.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <p className="font-semibold">{author?.name}</p>
+                      <p className="text-xs text-muted-foreground">{comment.createdAt}</p>
+                    </div>
+                    <p className="text-foreground/90">{comment.content}</p>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-muted-foreground text-sm">No comments yet. Be the first to start the discussion!</p>
+          )}
+        </div>
+        {currentUser && (
+          <form onSubmit={handleSubmit(onSubmit)} className="flex items-start gap-4">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={currentUser.avatarUrl} />
+              <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <Textarea placeholder="Add to the discussion..." {...register('content')} />
+              {errors.content && <p className="text-sm text-red-500 mt-1">{errors.content.message}</p>}
+            </div>
+            <Button type="submit" size="icon" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </form>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 const IdeaDetailSkeleton = () => (
   <div className="space-y-8">
     <Skeleton className="h-10 w-3/4" />
@@ -19,6 +115,7 @@ const IdeaDetailSkeleton = () => (
       <div className="lg:col-span-2 space-y-6">
         <Skeleton className="h-40 w-full" />
         <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-64 w-full" />
       </div>
       <div className="space-y-6">
         <Skeleton className="h-32 w-full" />
@@ -110,7 +207,7 @@ export function IdeaDetailPage() {
       </AppLayout>
     );
   }
-  if (!data) return null;
+  if (!data || !ideaId) return null;
   const { idea, author, team, teamMembers } = data;
   const isUserInTeam = currentUser && teamMembers.some(member => member.id === currentUser.id);
   return (
@@ -157,6 +254,7 @@ export function IdeaDetailPage() {
                 </div>
               </CardContent>
             </Card>
+            <CommentsSection ideaId={ideaId} />
           </div>
           <div className="space-y-6 lg:sticky lg:top-24">
             <Card>

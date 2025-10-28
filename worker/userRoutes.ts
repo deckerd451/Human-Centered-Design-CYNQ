@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Env } from './core-utils';
-import type { ApiResponse, Idea, Team, User } from '@shared/types';
+import type { ApiResponse, Idea, Team, User, Comment } from '@shared/types';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
     // GET all resources
     app.get('/api/ideas', async (c) => {
@@ -33,12 +33,27 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         }
         return c.json({ success: true, data });
     });
+    // GET comments for an idea
+    app.get('/api/ideas/:id/comments', async (c) => {
+        const id = c.req.param('id');
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.getCommentsForIdea(id);
+        return c.json({ success: true, data } satisfies ApiResponse<Comment[]>);
+    });
     // POST to create a resource
     app.post('/api/ideas', async (c) => {
         const body = await c.req.json<Omit<Idea, 'id' | 'createdAt' | 'upvotes'>>();
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
         const data = await stub.addIdea(body);
         return c.json({ success: true, data } satisfies ApiResponse<Idea>, 201);
+    });
+    // POST a comment to an idea
+    app.post('/api/ideas/:id/comments', async (c) => {
+        const ideaId = c.req.param('id');
+        const body = await c.req.json<{ authorId: string; content: string }>();
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.addComment({ ...body, ideaId });
+        return c.json({ success: true, data } satisfies ApiResponse<Comment>, 201);
     });
     // PUT to update resources
     app.put('/api/users/me', async (c) => {

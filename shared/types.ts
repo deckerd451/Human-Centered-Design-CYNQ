@@ -24,6 +24,13 @@ export interface Team {
   ideaId: string;
   members: string[]; // array of user IDs
 }
+export interface Comment {
+  id: string;
+  ideaId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+}
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
