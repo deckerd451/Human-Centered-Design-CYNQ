@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Lightbulb, Loader2, Mail, CheckCircle } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Lightbulb, Loader2, Mail, CheckCircle, Link2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
@@ -57,15 +57,29 @@ const DisconnectedLogin = () => {
     </motion.div>
   );
 };
-const AwaitingMagicLink = () => (
-  <motion.div key="awaiting" variants={cardVariants} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center justify-center text-center p-6">
-    <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-    <h2 className="text-2xl font-semibold">Check your inbox!</h2>
-    <p className="text-muted-foreground mt-2">
-      We've sent a magic link to your email address. Click the link to sign in.
-    </p>
-  </motion.div>
-);
+const AwaitingMagicLink = () => {
+  const magicLinkToken = useAuthStore((s) => s.magicLinkToken);
+  return (
+    <motion.div key="awaiting" variants={cardVariants} initial="initial" animate="animate" exit="exit" className="w-full flex flex-col items-center justify-center text-center p-6">
+      <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+      <h2 className="text-2xl font-semibold">Check your inbox!</h2>
+      <p className="text-muted-foreground mt-2 max-w-sm">
+        We've sent a magic link to your email address. Click the link to sign in.
+      </p>
+      {magicLinkToken && (
+        <div className="mt-6 p-4 bg-muted rounded-lg w-full text-center">
+          <p className="text-sm text-muted-foreground mb-2">For demonstration purposes, click the link below:</p>
+          <Button asChild>
+            <Link to={`/auth/callback?token=${magicLinkToken}`}>
+              <Link2 className="mr-2 h-4 w-4" />
+              Click to Sign In
+            </Link>
+          </Button>
+        </div>
+      )}
+    </motion.div>
+  );
+};
 export function LoginPage() {
   const authState = useAuthStore((s) => s.authState);
   const navigate = useNavigate();

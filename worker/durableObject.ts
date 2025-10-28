@@ -7,6 +7,13 @@ export class GlobalDurableObject extends DurableObject {
         super(state, env as any);
         this.supabase = new SupabaseClient();
     }
+    // Auth methods
+    async sendMagicLink(email: string): Promise<{ success: boolean; token?: string }> {
+        return this.supabase.sendMagicLink(email);
+    }
+    async verifyMagicToken(token: string): Promise<User | null> {
+        return this.supabase.verifyMagicToken(token);
+    }
     async getUsers(): Promise<User[]> {
         return this.supabase.getUsers();
     }
