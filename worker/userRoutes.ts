@@ -2,6 +2,31 @@ import { Hono } from "hono";
 import { Env } from './core-utils';
 import type { ApiResponse, Idea, Team, User, Comment, Notification } from '@shared/types';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
+    // AUTH routes
+    app.post('/api/auth/magic-link', async (c) => {
+        const { email } = await c.req.json<{ email: string }>();
+        if (!email) {
+            return c.json({ success: false, error: 'Email is required' }, 400);
+        }
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const { success, token } = await stub.sendMagicLink(email);
+        // In a real app, the token would be emailed, not returned.
+        // For this simulation, we can return it to aid frontend development if needed,
+        // but a simple success message is more realistic.
+        return c.json({ success } satisfies ApiResponse);
+    });
+    app.post('/api/auth/verify-token', async (c) => {
+        const { token } = await c.req.json<{ token: string }>();
+        if (!token) {
+            return c.json({ success: false, error: 'Token is required' }, 400);
+        }
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const user = await stub.verifyMagicToken(token);
+        if (!user) {
+            return c.json({ success: false, error: 'Invalid or expired token' }, 401);
+        }
+        return c.json({ success: true, data: user } satisfies ApiResponse<User>);
+    });
     // GET all resources
     app.get('/api/ideas', async (c) => {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));

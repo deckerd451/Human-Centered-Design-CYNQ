@@ -1,39 +1,34 @@
 import { create } from 'zustand';
 import { User } from '@shared/types';
-import { updateCurrentUser } from '@/lib/apiClient';
-type AuthState = 'disconnected' | 'connecting' | 'connected';
+import { updateCurrentUser, sendMagicLink as apiSendMagicLink, verifyMagicToken } from '@/lib/apiClient';
+type AuthState = 'disconnected' | 'awaitingMagicLink' | 'authenticating' | 'connected';
 interface AuthStore {
   authState: AuthState;
   user: User | null;
-  login: () => void;
+  sendMagicLink: (email: string) => Promise<void>;
+  verifyTokenAndLogin: (token: string) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => Promise<void>;
   connectGitHub: () => Promise<void>;
   disconnectGitHub: () => void;
 }
-const mockUser: User = {
-  id: 'user-1',
-  name: 'Alex Innovator',
-  username: 'alex_innovator',
-  avatarUrl: 'https://github.com/shadcn.png',
-  bio: 'Passionate about building the future, one idea at a time. Full-stack developer with a love for serverless tech.',
-  skills: ['React', 'TypeScript', 'Node.js', 'Cloudflare Workers', 'Go'],
-  interests: ['AI/ML', 'Decentralized Systems', 'UX Design'],
-  githubUsername: 'alex-innovator',
-  githubStats: {
-    repos: 42,
-    followers: 1200,
-    following: 150,
-  },
-};
 export const useAuthStore = create<AuthStore>((set, get) => ({
   authState: 'disconnected',
   user: null,
-  login: () => {
-    set({ authState: 'connecting' });
-    setTimeout(() => {
-      set({ authState: 'connected', user: mockUser });
-    }, 1500); // Simulate a 1.5-second login flow
+  sendMagicLink: async (email: string) => {
+    await apiSendMagicLink(email);
+    set({ authState: 'awaitingMagicLink' });
+  },
+  verifyTokenAndLogin: async (token: string) => {
+    set({ authState: 'authenticating' });
+    try {
+      const user = await verifyMagicToken(token);
+      set({ authState: 'connected', user });
+    } catch (error) {
+      console.error("Magic link verification failed:", error);
+      set({ authState: 'disconnected', user: null });
+      throw error;
+    }
   },
   logout: () => {
     set({ authState: 'disconnected', user: null });
@@ -43,19 +38,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     if (!currentUser) {
       throw new Error("User not authenticated");
     }
-    // Optimistic update
     const previousUser = currentUser;
     set({ user: { ...currentUser, ...data } });
     try {
-      // Persist changes to the backend
       const updatedUser = await updateCurrentUser(currentUser.id, data);
-      // Sync with the backend response
       set({ user: updatedUser });
     } catch (error) {
       console.error("Failed to update user profile:", error);
-      // Rollback on failure
       set({ user: previousUser });
-      throw error; // Re-throw to be caught by the form handler
+      throw error;
     }
   },
   connectGitHub: () => {

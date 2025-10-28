@@ -21,11 +21,17 @@ import { TeamBuilderPage } from '@/pages/TeamBuilderPage';
 import { LeaderboardPage } from '@/pages/LeaderboardPage';
 import { SynapsePage } from '@/pages/SynapsePage';
 import { IdeaDetailPage } from '@/pages/IdeaDetailPage';
+import { AuthCallbackPage } from '@/pages/AuthCallbackPage';
 const queryClient = new QueryClient();
 const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
+  {
+    path: "/auth/callback",
+    element: <AuthCallbackPage />,
     errorElement: <RouteErrorBoundary />,
   },
   {

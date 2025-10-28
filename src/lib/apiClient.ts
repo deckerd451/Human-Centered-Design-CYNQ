@@ -14,6 +14,18 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
   }
   return json.data as T;
 };
+export const sendMagicLink = (email: string): Promise<void> =>
+  fetch('/api/auth/magic-link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  }).then(res => handleResponse<void>(res));
+export const verifyMagicToken = (token: string): Promise<User> =>
+  fetch('/api/auth/verify-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  }).then(res => handleResponse<User>(res));
 export const getIdeas = (): Promise<Idea[]> =>
   fetch('/api/ideas').then(res => handleResponse<Idea[]>(res));
 export const getTeams = (): Promise<Team[]> =>
