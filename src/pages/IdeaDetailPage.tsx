@@ -10,7 +10,7 @@ import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft } from "lucid
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getIdeaById, upvoteIdea, requestToJoinIdea } from "@/lib/apiClient";
-import { Idea, Team, User } from "@/lib/types";
+import { Idea, Team, User } from "@shared/types";
 import { useAuthStore } from "@/stores/authStore";
 const IdeaDetailSkeleton = () => (
   <div className="space-y-8">
@@ -45,6 +45,10 @@ export function IdeaDetailPage() {
           setNotFound(true);
         }
         setLoading(false);
+      }).catch(err => {
+        console.error("Failed to load idea details:", err);
+        setNotFound(true);
+        setLoading(false);
       });
     }
   }, [ideaId]);
@@ -54,20 +58,21 @@ export function IdeaDetailPage() {
       const updatedTeam = await requestToJoinIdea(ideaId, currentUser.id);
       setData(prevData => {
         if (!prevData) return null;
-        const newTeamMembers = updatedTeam.members
-          .map(memberId => [prevData.author, ...prevData.teamMembers].find(u => u.id === memberId))
-          .filter((u): u is User => !!u);
-        // Add current user to team members if not already present
-        if (!newTeamMembers.some(m => m.id === currentUser.id)) {
-            newTeamMembers.push(currentUser);
+        const existingMemberIds = new Set(prevData.teamMembers.map(m => m.id));
+        const allPossibleMembers = [...prevData.teamMembers, prevData.author];
+        if(!existingMemberIds.has(currentUser.id)) {
+            allPossibleMembers.push(currentUser);
         }
+        const newTeamMembers = updatedTeam.members
+          .map(memberId => allPossibleMembers.find(u => u.id === memberId))
+          .filter((u): u is User => !!u);
         return {
           ...prevData,
           team: updatedTeam,
           teamMembers: newTeamMembers,
         };
       });
-      toast.success(`Request sent to join team for "${data?.idea.title}"!`);
+      toast.success(`Successfully joined team for "${data?.idea.title}"!`);
     } catch (error) {
       toast.error("Failed to send join request.");
     }

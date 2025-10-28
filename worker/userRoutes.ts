@@ -1,50 +1,75 @@
 import { Hono } from "hono";
 import { Env } from './core-utils';
-import type { DemoItem, ApiResponse } from '@shared/types';
-
+import type { ApiResponse, Idea, Team, User } from '@shared/types';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
-    app.get('/api/test', (c) => c.json({ success: true, data: { name: 'CF Workers Demo' }}));
-
-    // Demo items endpoint using Durable Object storage
-    app.get('/api/demo', async (c) => {
-        const durableObjectStub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await durableObjectStub.getDemoItems();
-        return c.json({ success: true, data } satisfies ApiResponse<DemoItem[]>);
+    // GET all resources
+    app.get('/api/ideas', async (c) => {
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.getIdeas();
+        return c.json({ success: true, data: data.reverse() } satisfies ApiResponse<Idea[]>);
     });
-
-    // Counter using Durable Object
-    app.get('/api/counter', async (c) => {
-        const durableObjectStub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await durableObjectStub.getCounterValue();
-        return c.json({ success: true, data } satisfies ApiResponse<number>);
+    app.get('/api/teams', async (c) => {
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.getTeams();
+        return c.json({ success: true, data } satisfies ApiResponse<Team[]>);
     });
-    
-    app.post('/api/counter/increment', async (c) => {
-        const durableObjectStub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await durableObjectStub.increment();
-        return c.json({ success: true, data } satisfies ApiResponse<number>);
+    app.get('/api/users', async (c) => {
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.getUsers();
+        return c.json({ success: true, data } satisfies ApiResponse<User[]>);
     });
-
-    // Demo item management endpoints
-    app.post('/api/demo', async (c) => {
-        const body = await c.req.json() as DemoItem;
-        const durableObjectStub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await durableObjectStub.addDemoItem(body);
-        return c.json({ success: true, data } satisfies ApiResponse<DemoItem[]>);
+    app.get('/api/leaderboard', async (c) => {
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.getLeaderboardData();
+        return c.json({ success: true, data } satisfies ApiResponse<{ users: User[], ideas: Idea[] }>);
     });
-
-    app.put('/api/demo/:id', async (c) => {
+    // GET single resource
+    app.get('/api/ideas/:id', async (c) => {
         const id = c.req.param('id');
-        const body = await c.req.json() as Partial<Omit<DemoItem, 'id'>>;
-        const durableObjectStub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await durableObjectStub.updateDemoItem(id, body);
-        return c.json({ success: true, data } satisfies ApiResponse<DemoItem[]>);
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.getIdeaById(id);
+        if (!data) {
+            return c.json({ success: false, error: 'Idea not found' }, 404);
+        }
+        return c.json({ success: true, data });
     });
-
-    app.delete('/api/demo/:id', async (c) => {
+    // POST to create a resource
+    app.post('/api/ideas', async (c) => {
+        const body = await c.req.json<Omit<Idea, 'id' | 'createdAt' | 'upvotes'>>();
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.addIdea(body);
+        return c.json({ success: true, data } satisfies ApiResponse<Idea>, 201);
+    });
+    // PUT to update resources
+    app.put('/api/users/me', async (c) => {
+        const body = await c.req.json<{ userId: string; updates: Partial<User> }>();
+        if (!body.userId || !body.updates) {
+            return c.json({ success: false, error: 'User ID and updates are required' }, 400);
+        }
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.updateUser(body.userId, body.updates);
+        if (!data) {
+            return c.json({ success: false, error: 'User not found' }, 404);
+        }
+        return c.json({ success: true, data } satisfies ApiResponse<User>);
+    });
+    app.put('/api/ideas/:id/upvote', async (c) => {
         const id = c.req.param('id');
-        const durableObjectStub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await durableObjectStub.deleteDemoItem(id);
-        return c.json({ success: true, data } satisfies ApiResponse<DemoItem[]>);
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.upvoteIdea(id);
+        if (!data) {
+            return c.json({ success: false, error: 'Idea not found' }, 404);
+        }
+        return c.json({ success: true, data } satisfies ApiResponse<Idea>);
+    });
+    app.put('/api/ideas/:id/join', async (c) => {
+        const id = c.req.param('id');
+        const { userId } = await c.req.json<{ userId: string }>();
+        if (!userId) {
+            return c.json({ success: false, error: 'User ID is required' }, 400);
+        }
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.requestToJoinIdea(id, userId);
+        return c.json({ success: true, data } satisfies ApiResponse<Team>);
     });
 }

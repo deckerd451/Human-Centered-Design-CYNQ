@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { getIdeas, addIdea } from '@/lib/apiClient';
-import { Idea } from '@/lib/types';
+import { Idea } from '@shared/types';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -34,6 +34,9 @@ const RecentIdeas = ({ refreshKey }: { refreshKey: number }) => {
     setLoading(true);
     getIdeas().then(data => {
       setIdeas(data.slice(0, 3)); // Show top 3 recent ideas
+      setLoading(false);
+    }).catch(err => {
+      console.error("Failed to load recent ideas:", err);
       setLoading(false);
     });
   }, [refreshKey]);

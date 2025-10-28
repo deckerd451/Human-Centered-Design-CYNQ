@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Lightbulb, Star, Tag, Frown } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { getIdeas } from "@/lib/apiClient";
-import { Idea } from "@/lib/types";
+import { Idea } from "@shared/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 const IdeaCard = ({ idea }: { idea: Idea }) => (
@@ -73,6 +73,9 @@ export function SearchPage() {
       setAllIdeas(data);
       setFilteredIdeas(data);
       setLoading(false);
+    }).catch(err => {
+        console.error("Failed to load ideas:", err);
+        setLoading(false);
     });
   }, []);
   const allTags = useMemo(() => {

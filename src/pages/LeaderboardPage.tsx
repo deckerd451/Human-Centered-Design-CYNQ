@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Trophy, Lightbulb, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getLeaderboardData } from "@/lib/apiClient";
-import { User, Idea } from "@/lib/types";
+import { User, Idea } from "@shared/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +28,9 @@ export function LeaderboardPage() {
     getLeaderboardData().then(data => {
       setLeaderboard(data);
       setLoading(false);
+    }).catch(err => {
+        console.error("Failed to load leaderboard data:", err);
+        setLoading(false);
     });
   }, []);
   return (
@@ -90,7 +93,7 @@ export function LeaderboardPage() {
                                 <Star className="h-4 w-4 text-yellow-500" />
                                 <span>{idea.upvotes} upvotes</span>
                               </div>
-                              <span>•</span>
+                              <span>���</span>
                               <span>{idea.createdAt}</span>
                             </div>
                           </div>

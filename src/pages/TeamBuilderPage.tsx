@@ -9,7 +9,7 @@ import { Toaster, toast } from "@/components/ui/sonner";
 import { Users, UserPlus, Tag, Frown } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { getIdeas, getTeams, getUsers, requestToJoinIdea } from "@/lib/apiClient";
-import { Idea, Team, User } from "@/lib/types";
+import { Idea, Team, User } from "@shared/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
@@ -121,6 +121,9 @@ export function TeamBuilderPage() {
       setTeams(teamData);
       setUsers(userData);
       setLoading(false);
+    }).catch(err => {
+        console.error("Failed to load team builder data:", err);
+        setLoading(false);
     });
   }, []);
   const handleJoinRequest = async (ideaId: string) => {
@@ -131,11 +134,11 @@ export function TeamBuilderPage() {
     try {
       const updatedTeam = await requestToJoinIdea(ideaId, currentUser.id);
       setTeams(prevTeams => {
-        const otherTeams = prevTeams.filter(t => t.id !== updatedTeam.id);
+        const otherTeams = prevTeams.filter(t => t.ideaId !== ideaId);
         return [...otherTeams, updatedTeam];
       });
       const idea = ideas.find(i => i.id === ideaId);
-      toast.success(`Request sent to join team for "${idea?.title}"!`);
+      toast.success(`Successfully joined team for "${idea?.title}"!`);
     } catch (error) {
       toast.error("Failed to send join request.");
     }

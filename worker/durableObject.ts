@@ -1,58 +1,209 @@
 import { DurableObject } from "cloudflare:workers";
-import type { DemoItem } from '@shared/types';
-import { MOCK_ITEMS } from '@shared/mock-data';
-
-// **DO NOT MODIFY THE CLASS NAME**
+import type { User, Idea, Team } from '@shared/types';
+// SEED DATA (moved from apiClient.ts)
+const SEED_USERS: User[] = [
+  {
+    id: 'user-1',
+    name: 'Alex Innovator',
+    username: 'alex_innovator',
+    avatarUrl: 'https://github.com/shadcn.png',
+    bio: 'Building the future.',
+    skills: ['React', 'TypeScript', 'Go'],
+    interests: ['AI', 'Serverless'],
+  },
+  {
+    id: 'user-2',
+    name: 'Bella Builder',
+    username: 'bella_builder',
+    avatarUrl: 'https://uifaces.co/our-content/donated/xP_Yp-HO.jpg',
+    bio: 'Designer and frontend expert.',
+    skills: ['Figma', 'UI/UX', 'React'],
+    interests: ['Design Systems', 'Accessibility'],
+  },
+  {
+    id: 'user-3',
+    name: 'Charlie Coder',
+    username: 'charlie_coder',
+    avatarUrl: 'https://randomuser.me/api/portraits/men/75.jpg',
+    bio: 'Backend and infrastructure guru.',
+    skills: ['Go', 'Python', 'Kubernetes'],
+    interests: ['Distributed Systems', 'DevOps'],
+  },
+  {
+    id: 'user-4',
+    name: 'Dana Designer',
+    username: 'dana_designer',
+    avatarUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
+    bio: 'Crafting beautiful and intuitive user experiences.',
+    skills: ['UI/UX Design', 'Figma', 'Prototyping', 'CSS'],
+    interests: ['Design Systems', 'Microinteractions'],
+  },
+  {
+    id: 'user-5',
+    name: 'Evan Engineer',
+    username: 'evan_engineer',
+    avatarUrl: 'https://randomuser.me/api/portraits/men/43.jpg',
+    bio: 'DevOps and cloud infrastructure specialist.',
+    skills: ['AWS', 'Docker', 'Kubernetes', 'Terraform'],
+    interests: ['Scalability', 'Site Reliability', 'Automation'],
+  },
+];
+const SEED_IDEAS: Idea[] = [
+  {
+    id: 'idea-1',
+    title: 'AI-Powered Code Review Assistant',
+    description: 'An intelligent assistant that automatically reviews pull requests, suggests improvements, and identifies potential bugs. It integrates with GitHub, GitLab, and Bitbucket to provide seamless feedback within the developer workflow. The AI model is trained on a massive dataset of open-source code to understand context, coding patterns, and best practices.',
+    tags: ['AI', 'Developer Tools', 'Productivity'],
+    authorId: 'user-1',
+    upvotes: 128,
+    createdAt: '2 days ago',
+    skillsNeeded: ['Python', 'Machine Learning', 'Go'],
+  },
+  {
+    id: 'idea-2',
+    title: 'Decentralized Social Media Platform',
+    description: 'A social network where users own their data and content, built on a peer-to-peer network. It aims to create a censorship-resistant environment where creators are directly rewarded for their contributions through a native token economy.',
+    tags: ['Web3', 'Social Media', 'Decentralization'],
+    authorId: 'user-2',
+    upvotes: 95,
+    createdAt: '5 days ago',
+    skillsNeeded: ['TypeScript', 'Go', 'P2P Networking'],
+  },
+  {
+    id: 'idea-3',
+    title: 'Real-time Collaborative Design Tool',
+    description: 'A web-based design tool like Figma, but with a focus on real-time collaboration and version control for design systems. It will feature component-based design, live multiplayer editing, and powerful developer handoff tools.',
+    tags: ['Design', 'SaaS', 'Collaboration'],
+    authorId: 'user-2',
+    upvotes: 210,
+    createdAt: '1 week ago',
+    skillsNeeded: ['React', 'UI/UX Design', 'WebSockets'],
+  },
+  {
+    id: 'idea-4',
+    title: 'Gamified Language Learning App',
+    description: 'An app that uses game mechanics and storytelling to make learning a new language more engaging and effective. Users embark on an epic quest where they learn vocabulary and grammar by completing challenges and interacting with characters.',
+    tags: ['Education', 'Mobile', 'Gamification'],
+    authorId: 'user-3',
+    upvotes: 72,
+    createdAt: '1 week ago',
+    skillsNeeded: ['React Native', 'UI/UX Design', 'Gamification'],
+  },
+];
+const SEED_TEAMS: Team[] = [
+  {
+    id: 'team-1',
+    name: 'Code-AI',
+    mission: 'To revolutionize code reviews with artificial intelligence.',
+    ideaId: 'idea-1',
+    members: ['user-1', 'user-3', 'user-5'],
+  },
+  {
+    id: 'team-2',
+    name: 'DesignVerse',
+    mission: 'Building the next generation of collaborative design tools.',
+    ideaId: 'idea-3',
+    members: ['user-2', 'user-4'],
+  },
+  {
+    id: 'team-3',
+    name: 'DecentraNet',
+    mission: 'Building the future of the decentralized web.',
+    ideaId: 'idea-2',
+    members: ['user-2', 'user-3'],
+  },
+];
 export class GlobalDurableObject extends DurableObject {
-    async getCounterValue(): Promise<number> {
-      const value = (await this.ctx.storage.get("counter_value")) || 0;
-      return value as number;
+    async initializeData(): Promise<void> {
+        const users = await this.ctx.storage.get("users");
+        if (!users) {
+            await this.ctx.storage.put("users", SEED_USERS);
+            await this.ctx.storage.put("ideas", SEED_IDEAS);
+            await this.ctx.storage.put("teams", SEED_TEAMS);
+        }
     }
-  
-    async increment(amount = 1): Promise<number> {
-      let value: number = (await this.ctx.storage.get("counter_value")) || 0;
-      value += amount;
-      await this.ctx.storage.put("counter_value", value);
-      return value;
+    async getUsers(): Promise<User[]> {
+        await this.initializeData();
+        return (await this.ctx.storage.get("users")) || [];
     }
-  
-    async decrement(amount = 1): Promise<number> {
-      let value: number = (await this.ctx.storage.get("counter_value")) || 0;
-      value -= amount;
-      await this.ctx.storage.put("counter_value", value);
-      return value;
+    async getIdeas(): Promise<Idea[]> {
+        await this.initializeData();
+        return (await this.ctx.storage.get("ideas")) || [];
     }
-
-    async getDemoItems(): Promise<DemoItem[]> {
-      const items = await this.ctx.storage.get("demo_items");
-      if (items) {
-        return items as DemoItem[];
-      }
-      
-      await this.ctx.storage.put("demo_items", MOCK_ITEMS);
-      return MOCK_ITEMS;
+    async getTeams(): Promise<Team[]> {
+        await this.initializeData();
+        return (await this.ctx.storage.get("teams")) || [];
     }
-
-    async addDemoItem(item: DemoItem): Promise<DemoItem[]> {
-      const items = await this.getDemoItems();
-      const updatedItems = [...items, item];
-      await this.ctx.storage.put("demo_items", updatedItems);
-      return updatedItems;
+    async getIdeaById(id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[] } | null> {
+        const ideas = await this.getIdeas();
+        const users = await this.getUsers();
+        const teams = await this.getTeams();
+        const idea = ideas.find(i => i.id === id);
+        if (!idea) return null;
+        const author = users.find(u => u.id === idea.authorId);
+        if (!author) return null;
+        const team = teams.find(t => t.ideaId === id);
+        const teamMembers = team ? team.members.map(memberId => users.find(u => u.id === memberId)).filter((u): u is User => !!u) : [];
+        return { idea, author, team, teamMembers };
     }
-
-    async updateDemoItem(id: string, updates: Partial<Omit<DemoItem, 'id'>>): Promise<DemoItem[]> {
-      const items = await this.getDemoItems();
-      const updatedItems = items.map(item => 
-        item.id === id ? { ...item, ...updates } : item
-      );
-      await this.ctx.storage.put("demo_items", updatedItems);
-      return updatedItems;
+    async getLeaderboardData(): Promise<{ users: User[], ideas: Idea[] }> {
+        const users = await this.getUsers();
+        const ideas = await this.getIdeas();
+        return {
+            users: [...users].sort((a, b) => b.skills.length - a.skills.length),
+            ideas: [...ideas].sort((a, b) => b.upvotes - a.upvotes),
+        };
     }
-
-    async deleteDemoItem(id: string): Promise<DemoItem[]> {
-      const items = await this.getDemoItems();
-      const updatedItems = items.filter(item => item.id !== id);
-      await this.ctx.storage.put("demo_items", updatedItems);
-      return updatedItems;
+    async addIdea(ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>): Promise<Idea> {
+        const ideas = await this.getIdeas();
+        const newIdea: Idea = {
+            ...ideaData,
+            id: `idea-${Date.now()}`,
+            createdAt: 'Just now',
+            upvotes: 0,
+        };
+        ideas.push(newIdea);
+        await this.ctx.storage.put("ideas", ideas);
+        return newIdea;
+    }
+    async updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
+        const users = await this.getUsers();
+        const userIndex = users.findIndex(u => u.id === userId);
+        if (userIndex === -1) return null;
+        users[userIndex] = { ...users[userIndex], ...updates, id: userId };
+        await this.ctx.storage.put("users", users);
+        return users[userIndex];
+    }
+    async upvoteIdea(ideaId: string): Promise<Idea | null> {
+        const ideas = await this.getIdeas();
+        const idea = ideas.find(i => i.id === ideaId);
+        if (idea) {
+            idea.upvotes += 1;
+            await this.ctx.storage.put("ideas", ideas);
+            return idea;
+        }
+        return null;
+    }
+    async requestToJoinIdea(ideaId: string, userId: string): Promise<Team> {
+        const teams = await this.getTeams();
+        const ideas = await this.getIdeas();
+        let team = teams.find(t => t.ideaId === ideaId);
+        if (team) {
+            if (!team.members.includes(userId)) {
+                team.members.push(userId);
+            }
+        } else {
+            const idea = ideas.find(i => i.id === ideaId);
+            team = {
+                id: `team-${Date.now()}`,
+                name: `${idea?.title} Team`,
+                mission: `To build ${idea?.title}`,
+                ideaId: ideaId,
+                members: [userId],
+            };
+            teams.push(team);
+        }
+        await this.ctx.storage.put("teams", teams);
+        return team;
     }
 }
