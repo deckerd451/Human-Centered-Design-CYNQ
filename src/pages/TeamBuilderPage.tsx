@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "@/components/ui/sonner";
-import { Users, UserPlus, Tag, Frown } from "lucide-react";
+import { Users, UserPlus, Tag, Frown, FilterX } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { getIdeas, getTeams, getUsers, requestToJoinIdea } from "@/lib/apiClient";
 import { Idea, Team, User } from "@shared/types";
@@ -20,10 +20,11 @@ const TeamBuilderCard = ({ idea, team, users, onJoinRequest }: { idea: Idea; tea
     return team.members.map(memberId => users.find(u => u.id === memberId)).filter(Boolean) as User[];
   }, [team, users]);
   const isUserInTeam = currentUser && team?.members.includes(currentUser.id);
+  const hasPendingRequest = currentUser && team?.joinRequests?.includes(currentUser.id);
   const handleJoinRequest = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isUserInTeam) {
+    if (!isUserInTeam && !hasPendingRequest) {
       onJoinRequest(idea.id);
     }
   };
@@ -66,9 +67,9 @@ const TeamBuilderCard = ({ idea, team, users, onJoinRequest }: { idea: Idea; tea
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" onClick={handleJoinRequest} disabled={!!isUserInTeam}>
+            <Button className="w-full" onClick={handleJoinRequest} disabled={!!isUserInTeam || !!hasPendingRequest}>
               <UserPlus className="mr-2 h-4 w-4" />
-              {isUserInTeam ? "Joined" : "Request to Join"}
+              {isUserInTeam ? "Joined" : hasPendingRequest ? "Request Sent" : "Request to Join"}
             </Button>
           </CardFooter>
         </Card>
@@ -134,11 +135,11 @@ export function TeamBuilderPage() {
     try {
       const updatedTeam = await requestToJoinIdea(ideaId, currentUser.id);
       setTeams(prevTeams => {
-        const otherTeams = prevTeams.filter(t => t.ideaId !== ideaId);
+        const otherTeams = prevTeams.filter(t => t.id !== updatedTeam.id);
         return [...otherTeams, updatedTeam];
       });
       const idea = ideas.find(i => i.id === ideaId);
-      toast.success(`Successfully joined team for "${idea?.title}"!`);
+      toast.success(`Request sent to join team for "${idea?.title}"!`);
     } catch (error) {
       toast.error("Failed to send join request.");
     }
@@ -202,9 +203,26 @@ export function TeamBuilderPage() {
             </div>
           ) : (
             <div className="text-center py-16">
-              <Frown className="mx-auto h-16 w-16 text-muted-foreground" />
-              <h3 className="mt-4 text-2xl font-semibold">No Ideas Found</h3>
-              <p className="mt-2 text-muted-foreground">Try adjusting your skill filters to find what you're looking for.</p>
+              {ideas.length > 0 ? (
+                <>
+                  <FilterX className="mx-auto h-16 w-16 text-muted-foreground" />
+                  <h3 className="mt-4 text-2xl font-semibold">No Matching Ideas</h3>
+                  <p className="mt-2 text-muted-foreground">
+                    Try adjusting your skill filters to find what you're looking for.
+                  </p>
+                  <Button variant="outline" className="mt-4" onClick={() => setActiveSkills(new Set())}>
+                    Clear Filters
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Frown className="mx-auto h-16 w-16 text-muted-foreground" />
+                  <h3 className="mt-4 text-2xl font-semibold">No Ideas Found</h3>
+                  <p className="mt-2 text-muted-foreground">
+                    There are no projects seeking team members right now. Why not start one?
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>
