@@ -94,7 +94,9 @@ function runSetupCommands() {
     "bun add node-fetch",
     "bun remove @supabase/supabase-js node-fetch",
     "rm -rf src/pages/DemoPage.tsx",
-    "bun install"
+    "bun install",
+    "rm -rf shared/mock-data.ts",
+    "rm -rf src/pages/DemoPage.tsx"
 ];
     
     if (commands.length === 0) {
