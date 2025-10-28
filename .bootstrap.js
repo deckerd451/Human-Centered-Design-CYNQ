@@ -86,7 +86,8 @@ function runSetupCommands() {
     "rm -rf src/pages/DemoPage.tsx",
     "bun install reactflow",
     "bun install @xyflow/react",
-    "bun uninstall reactflow react-flow"
+    "bun uninstall reactflow react-flow",
+    "bun add @supabase/supabase-js"
 ];
     
     if (commands.length === 0) {
