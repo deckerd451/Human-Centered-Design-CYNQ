@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-// @ts-ignore
+// @ts-expect-error
 import { serveStatic } from 'hono/cloudflare-workers';
 import manifest from '__STATIC_CONTENT_MANIFEST';
 import { Env } from './core-utils';
