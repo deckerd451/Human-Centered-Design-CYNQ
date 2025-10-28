@@ -21,7 +21,7 @@ export interface Idea {
   tags: string[];
   authorId: string;
   upvotes: number;
-  createdAt: string;
+  createdAt: string; // ISO 8601 date string
   skillsNeeded: string[];
 }
 export interface Team {
@@ -37,7 +37,7 @@ export interface Comment {
   ideaId: string;
   authorId: string;
   content: string;
-  createdAt: string;
+  createdAt: string; // ISO 8601 date string
 }
 export interface Notification {
   id: string;
@@ -45,7 +45,7 @@ export interface Notification {
   type: 'new_comment' | 'idea_upvote' | 'join_request' | 'join_request_accepted' | 'join_request_declined';
   message: string;
   link: string; // e.g., /idea/idea-1
-  createdAt: string;
+  createdAt: string; // ISO 8601 date string
   read: boolean;
 }
 export interface ApiResponse<T = unknown> {

@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { getNotifications, markNotificationsAsRead } from '@/lib/apiClient';
 import { Notification } from '@shared/types';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/helpers';
 const NOTIFICATION_ICONS: Record<Notification['type'], React.ReactNode> = {
   new_comment: <MessageSquare className="h-4 w-4 text-blue-500" />,
   idea_upvote: <ArrowUp className="h-4 w-4 text-green-500" />,
@@ -84,7 +85,7 @@ export function Notifications() {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm">{notification.message}</p>
-                    <p className="text-xs text-muted-foreground">{notification.createdAt}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(notification.createdAt)}</p>
                   </div>
                   {!notification.read && (
                     <div className="mt-1 h-2 w-2 rounded-full bg-blue-500" />

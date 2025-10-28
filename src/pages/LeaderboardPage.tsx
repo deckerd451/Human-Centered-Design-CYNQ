@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
+import { formatDate } from "@/lib/helpers";
 const LeaderboardSkeleton = () => (
   <div className="space-y-4">
     {[...Array(5)].map((_, i) => (
@@ -104,8 +105,8 @@ export function LeaderboardPage() {
                                   <Star className="h-4 w-4 text-yellow-500" />
                                   <span>{idea.upvotes} upvotes</span>
                                 </div>
-                                <span>•</span>
-                                <span>{idea.createdAt}</span>
+                                <span>��</span>
+                                <span>{formatDate(idea.createdAt)}</span>
                               </div>
                             </div>
                           </div>
