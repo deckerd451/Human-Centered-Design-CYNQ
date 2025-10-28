@@ -9,63 +9,63 @@ export class GlobalDurableObject extends DurableObject {
         this.env = env as Env;
     }
     // Auth methods
-    async sendMagicLink(email: string): Promise<{ success: boolean; token?: string }> {
-        return supabase.sendMagicLink(this.env, email);
+    async sendMagicLink(email: string, env: Env): Promise<{ success: boolean; token?: string }> {
+        return supabase.sendMagicLink(env, email);
     }
-    async verifyMagicToken(token: string): Promise<User | null> {
-        return supabase.verifyMagicToken(this.env, token);
+    async verifyMagicToken(token: string, env: Env): Promise<User | null> {
+        return supabase.verifyMagicToken(env, token);
     }
     // Data retrieval methods
-    async getUsers(): Promise<User[]> {
-        return supabase.getUsers(this.env);
+    async getUsers(env: Env): Promise<User[]> {
+        return supabase.getUsers(env);
     }
-    async getIdeas(): Promise<Idea[]> {
-        return supabase.getIdeas(this.env);
+    async getIdeas(env: Env): Promise<Idea[]> {
+        return supabase.getIdeas(env);
     }
-    async getTeams(): Promise<Team[]> {
-        return supabase.getTeams(this.env);
+    async getTeams(env: Env): Promise<Team[]> {
+        return supabase.getTeams(env);
     }
-    async getCommentsForIdea(ideaId: string): Promise<Comment[]> {
-        return supabase.getCommentsForIdea(this.env, ideaId);
+    async getCommentsForIdea(ideaId: string, env: Env): Promise<Comment[]> {
+        return supabase.getCommentsForIdea(env, ideaId);
     }
-    async getIdeaById(id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null> {
-        return supabase.getIdeaById(this.env, id);
+    async getIdeaById(id: string, env: Env): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null> {
+        return supabase.getIdeaById(env, id);
     }
-    async getLeaderboardData(): Promise<{ users: User[], ideas: Idea[] }> {
-        return supabase.getLeaderboardData(this.env);
+    async getLeaderboardData(env: Env): Promise<{ users: User[], ideas: Idea[] }> {
+        return supabase.getLeaderboardData(env);
     }
-    async getNotificationsForUser(userId: string): Promise<Notification[]> {
-        return supabase.getNotificationsForUser(this.env, userId);
+    async getNotificationsForUser(userId: string, env: Env): Promise<Notification[]> {
+        return supabase.getNotificationsForUser(env, userId);
     }
     // Data mutation methods
-    async addComment(commentData: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> {
-        return supabase.addComment(this.env, commentData);
+    async addComment(commentData: Omit<Comment, 'id' | 'createdAt'>, env: Env): Promise<Comment> {
+        return supabase.addComment(env, commentData);
     }
-    async addIdea(ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>): Promise<Idea> {
-        return supabase.addIdea(this.env, ideaData);
+    async addIdea(ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>, env: Env): Promise<Idea> {
+        return supabase.addIdea(env, ideaData);
     }
-    async updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
-        return supabase.updateUser(this.env, userId, updates);
+    async updateUser(userId: string, updates: Partial<User>, env: Env): Promise<User | null> {
+        return supabase.updateUser(env, userId, updates);
     }
-    async upvoteIdea(ideaId: string): Promise<Idea | null> {
-        return supabase.upvoteIdea(this.env, ideaId);
+    async upvoteIdea(ideaId: string, env: Env): Promise<Idea | null> {
+        return supabase.upvoteIdea(env, ideaId);
     }
-    async requestToJoinIdea(ideaId: string, userId: string): Promise<Team> {
-        return supabase.requestToJoinIdea(this.env, ideaId, userId);
+    async requestToJoinIdea(ideaId: string, userId: string, env: Env): Promise<Team> {
+        return supabase.requestToJoinIdea(env, ideaId, userId);
     }
-    async acceptJoinRequest(ideaId: string, userId: string): Promise<Team | null> {
-        return supabase.acceptJoinRequest(this.env, ideaId, userId);
+    async acceptJoinRequest(ideaId: string, userId: string, env: Env): Promise<Team | null> {
+        return supabase.acceptJoinRequest(env, ideaId, userId);
     }
-    async declineJoinRequest(ideaId: string, userId: string): Promise<Team | null> {
-        return supabase.declineJoinRequest(this.env, ideaId, userId);
+    async declineJoinRequest(ideaId: string, userId: string, env: Env): Promise<Team | null> {
+        return supabase.declineJoinRequest(env, ideaId, userId);
     }
-    async markNotificationsAsRead(userId: string, notificationIds: string[]): Promise<void> {
-        return supabase.markNotificationsAsRead(this.env, userId, notificationIds);
+    async markNotificationsAsRead(userId: string, notificationIds: string[], env: Env): Promise<void> {
+        return supabase.markNotificationsAsRead(env, userId, notificationIds);
     }
-    async updateIdea(id: string, updates: Partial<Idea>): Promise<Idea | null> {
-        return supabase.updateIdea(this.env, id, updates);
+    async updateIdea(id: string, updates: Partial<Idea>, env: Env): Promise<Idea | null> {
+        return supabase.updateIdea(env, id, updates);
     }
-    async deleteIdea(id: string): Promise<void> {
-        return supabase.deleteIdea(this.env, id);
+    async deleteIdea(id: string, env: Env): Promise<void> {
+        return supabase.deleteIdea(env, id);
     }
 }
