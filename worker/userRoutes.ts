@@ -1,8 +1,13 @@
 import { Hono } from "hono";
+import { serveStatic } from 'hono/cloudflare-workers';
 import { Env } from './core-utils';
 import type { ApiResponse, Idea, Team, User, Comment, Notification } from '@shared/types';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
-    // GET all resources
+    // Serve static assets from the client build
+    app.use('/assets/*', serveStatic({ root: './dist/client' }));
+    app.get('*', serveStatic({ path: './dist/client/index.html' }));
+
+    // API routes
     app.get('/api/ideas', async (c) => {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
         const data = await stub.getIdeas();
