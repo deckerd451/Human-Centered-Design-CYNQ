@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "@/components/ui/sonner";
-import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2, Check, X, UserCheck, GitBranch, Heart, Star, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2, Check, X, UserCheck, GitBranch, Heart, Star, MoreHorizontal, Edit, Trash2, Link as LinkIcon } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getIdeaById, upvoteIdea, requestToJoinIdea, getComments, postComment, getUsers, acceptJoinRequest, declineJoinRequest, updateIdea, deleteIdea } from "@/lib/apiClient";
@@ -24,6 +24,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatDate } from "@/lib/helpers";
+import ProjectBoard from "@/components/ProjectBoard";
 const commentSchema = z.object({
   content: z.string().min(1, "Comment cannot be empty.").max(500, "Comment is too long."),
 });
@@ -35,6 +36,10 @@ const ideaEditSchema = z.object({
   skillsNeeded: z.string().min(1, 'Please list at least one skill.'),
 });
 type IdeaEditFormData = z.infer<typeof ideaEditSchema>;
+const repoLinkSchema = z.object({
+  repoUrl: z.string().url("Please enter a valid GitHub repository URL.").startsWith("https://github.com/", "URL must be a GitHub repository."),
+});
+type RepoLinkFormData = z.infer<typeof repoLinkSchema>;
 const CommentsSection = ({ ideaId }: { ideaId: string }) => {
   const currentUser = useAuthStore((s) => s.user);
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
@@ -188,6 +193,37 @@ const TeamManagementCard = ({ ideaId, requesters, onUpdateRequest }: { ideaId: s
     </Card>
   );
 };
+const LinkRepoCard = ({ ideaId }: { ideaId: string }) => {
+  const linkRepoToIdea = useAuthStore(s => s.linkRepoToIdea);
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RepoLinkFormData>({
+    resolver: zodResolver(repoLinkSchema),
+  });
+  const onSubmit: SubmitHandler<RepoLinkFormData> = (data) => {
+    linkRepoToIdea(ideaId, data.repoUrl);
+    toast.success("Repository linked successfully!");
+  };
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <LinkIcon /> Link GitHub Repository
+        </CardTitle>
+        <CardDescription>Connect a repository to track project progress.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex items-start gap-2">
+          <div className="flex-1">
+            <Input id="repoUrl" placeholder="https://github.com/user/repo" {...register('repoUrl')} />
+            {errors.repoUrl && <p className="text-sm text-red-500 mt-1">{errors.repoUrl.message}</p>}
+          </div>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Link"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
 const IdeaDetailSkeleton = () => (
   <div className="space-y-8">
     <Skeleton className="h-10 w-3/4" />
@@ -208,6 +244,7 @@ export function IdeaDetailPage() {
   const { ideaId } = useParams<{ ideaId: string }>();
   const navigate = useNavigate();
   const currentUser = useAuthStore((s) => s.user);
+  const linkedRepos = useAuthStore(s => s.user?.linkedRepos);
   const [data, setData] = useState<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -332,6 +369,7 @@ export function IdeaDetailPage() {
   const isUserInTeam = currentUser && teamMembers.some(member => member.id === currentUser.id);
   const hasPendingRequest = currentUser && (team?.joinRequests || []).includes(currentUser.id);
   const isAuthor = currentUser && currentUser.id === author.id;
+  const repoUrl = linkedRepos?.get(ideaId);
   return (
     <AppLayout container>
       <Toaster />
@@ -379,6 +417,8 @@ export function IdeaDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6">
             {isAuthor && <TeamManagementCard ideaId={ideaId} requesters={joinRequesters} onUpdateRequest={handleTeamUpdate} />}
+            {isAuthor && <LinkRepoCard ideaId={ideaId} />}
+            <ProjectBoard idea={idea} repoUrl={repoUrl} />
             <Card>
               <CardHeader>
                 <CardTitle>Description</CardTitle>
