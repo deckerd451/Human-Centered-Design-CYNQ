@@ -1,9 +1,12 @@
 import { DurableObject } from "cloudflare:workers";
 import type { User, Idea, Team, Comment, Notification } from '@shared/types';
 import * as supabase from './supabase';
+import { initSupabase } from './supabase';
+
 export class GlobalDurableObject extends DurableObject {
     constructor(state: DurableObjectState, env: unknown) {
         super(state, env as any);
+        initSupabase(env as any);
     }
     // Auth methods
     async sendMagicLink(email: string): Promise<{ success: boolean; token?: string }> {
