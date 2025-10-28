@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Env } from './core-utils';
-import type { ApiResponse, Idea, Team, User, Comment } from '@shared/types';
+import type { ApiResponse, Idea, Team, User, Comment, Notification } from '@shared/types';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
     // GET all resources
     app.get('/api/ideas', async (c) => {
@@ -39,6 +39,13 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
         const data = await stub.getCommentsForIdea(id);
         return c.json({ success: true, data } satisfies ApiResponse<Comment[]>);
+    });
+    // GET notifications for a user
+    app.get('/api/notifications/:userId', async (c) => {
+        const userId = c.req.param('userId');
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.getNotificationsForUser(userId);
+        return c.json({ success: true, data } satisfies ApiResponse<Notification[]>);
     });
     // POST to create a resource
     app.post('/api/ideas', async (c) => {
@@ -86,5 +93,15 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
         const data = await stub.requestToJoinIdea(id, userId);
         return c.json({ success: true, data } satisfies ApiResponse<Team>);
+    });
+    // PUT to mark notifications as read
+    app.put('/api/notifications/read', async (c) => {
+        const { userId, notificationIds } = await c.req.json<{ userId: string; notificationIds: string[] }>();
+        if (!userId || !notificationIds) {
+            return c.json({ success: false, error: 'User ID and notification IDs are required' }, 400);
+        }
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        await stub.markNotificationsAsRead(userId, notificationIds);
+        return c.json({ success: true });
     });
 }

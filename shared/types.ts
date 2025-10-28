@@ -37,6 +37,15 @@ export interface Comment {
   content: string;
   createdAt: string;
 }
+export interface Notification {
+  id: string;
+  userId: string; // The user who receives the notification
+  type: 'new_comment' | 'idea_upvote' | 'join_request';
+  message: string;
+  link: string; // e.g., /idea/idea-1
+  createdAt: string;
+  read: boolean;
+}
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;

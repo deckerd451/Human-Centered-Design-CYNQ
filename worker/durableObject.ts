@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import type { User, Idea, Team, Comment } from '@shared/types';
+import type { User, Idea, Team, Comment, Notification } from '@shared/types';
 // SEED DATA (moved from apiClient.ts)
 const SEED_USERS: User[] = [
   {
@@ -136,6 +136,26 @@ const SEED_COMMENTS: Comment[] = [
     createdAt: '3 days ago',
   },
 ];
+const SEED_NOTIFICATIONS: Notification[] = [
+    {
+      id: 'notif-1',
+      userId: 'user-1',
+      type: 'new_comment',
+      message: 'Bella Builder commented on your idea "AI-Powered Code Review Assistant".',
+      link: '/idea/idea-1',
+      createdAt: '1 day ago',
+      read: false,
+    },
+    {
+      id: 'notif-2',
+      userId: 'user-2',
+      type: 'join_request',
+      message: 'Charlie Coder wants to join your team for "Decentralized Social Media Platform".',
+      link: '/idea/idea-2',
+      createdAt: '3 days ago',
+      read: true,
+    },
+];
 export class GlobalDurableObject extends DurableObject {
     async initializeData(): Promise<void> {
         const users = await this.ctx.storage.get("users");
@@ -144,6 +164,7 @@ export class GlobalDurableObject extends DurableObject {
             await this.ctx.storage.put("ideas", SEED_IDEAS);
             await this.ctx.storage.put("teams", SEED_TEAMS);
             await this.ctx.storage.put("comments", SEED_COMMENTS);
+            await this.ctx.storage.put("notifications", SEED_NOTIFICATIONS);
         }
     }
     async getUsers(): Promise<User[]> {
@@ -163,6 +184,17 @@ export class GlobalDurableObject extends DurableObject {
         const allComments: Comment[] = (await this.ctx.storage.get("comments")) || [];
         return allComments.filter(c => c.ideaId === ideaId).sort((a, b) => a.id.localeCompare(b.id));
     }
+    async createNotification(notificationData: Omit<Notification, 'id' | 'createdAt' | 'read'>): Promise<void> {
+        const allNotifications: Notification[] = (await this.ctx.storage.get("notifications")) || [];
+        const newNotification: Notification = {
+            ...notificationData,
+            id: `notif-${Date.now()}`,
+            createdAt: 'Just now',
+            read: false,
+        };
+        allNotifications.push(newNotification);
+        await this.ctx.storage.put("notifications", allNotifications);
+    }
     async addComment(commentData: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> {
         const allComments: Comment[] = (await this.ctx.storage.get("comments")) || [];
         const newComment: Comment = {
@@ -172,6 +204,18 @@ export class GlobalDurableObject extends DurableObject {
         };
         allComments.push(newComment);
         await this.ctx.storage.put("comments", allComments);
+        const ideas = await this.getIdeas();
+        const users = await this.getUsers();
+        const idea = ideas.find(i => i.id === commentData.ideaId);
+        const author = users.find(u => u.id === commentData.authorId);
+        if (idea && author && idea.authorId !== author.id) {
+            await this.createNotification({
+                userId: idea.authorId,
+                type: 'new_comment',
+                message: `${author.name} commented on your idea "${idea.title}".`,
+                link: `/idea/${idea.id}`,
+            });
+        }
         return newComment;
     }
     async getIdeaById(id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[] } | null> {
@@ -220,6 +264,16 @@ export class GlobalDurableObject extends DurableObject {
         if (idea) {
             idea.upvotes += 1;
             await this.ctx.storage.put("ideas", ideas);
+            const users = await this.getUsers();
+            const upvoter = users[0]; // Mock: assume first user upvoted
+            if (idea.authorId !== upvoter.id) {
+                await this.createNotification({
+                    userId: idea.authorId,
+                    type: 'idea_upvote',
+                    message: `${upvoter.name} upvoted your idea "${idea.title}".`,
+                    link: `/idea/${idea.id}`,
+                });
+            }
             return idea;
         }
         return null;
@@ -227,6 +281,7 @@ export class GlobalDurableObject extends DurableObject {
     async requestToJoinIdea(ideaId: string, userId: string): Promise<Team> {
         const teams = await this.getTeams();
         const ideas = await this.getIdeas();
+        const users = await this.getUsers();
         let team = teams.find(t => t.ideaId === ideaId);
         if (team) {
             if (!team.members.includes(userId)) {
@@ -244,6 +299,31 @@ export class GlobalDurableObject extends DurableObject {
             teams.push(team);
         }
         await this.ctx.storage.put("teams", teams);
+        const idea = ideas.find(i => i.id === ideaId);
+        const requester = users.find(u => u.id === userId);
+        if (idea && requester && idea.authorId !== requester.id) {
+            await this.createNotification({
+                userId: idea.authorId,
+                type: 'join_request',
+                message: `${requester.name} requested to join your team for "${idea.title}".`,
+                link: `/idea/${idea.id}`,
+            });
+        }
         return team;
+    }
+    async getNotificationsForUser(userId: string): Promise<Notification[]> {
+        await this.initializeData();
+        const allNotifications: Notification[] = (await this.ctx.storage.get("notifications")) || [];
+        return allNotifications.filter(n => n.userId === userId).sort((a, b) => b.id.localeCompare(a.id));
+    }
+    async markNotificationsAsRead(userId: string, notificationIds: string[]): Promise<void> {
+        const allNotifications: Notification[] = (await this.ctx.storage.get("notifications")) || [];
+        const idSet = new Set(notificationIds);
+        allNotifications.forEach(n => {
+            if (n.userId === userId && idSet.has(n.id)) {
+                n.read = true;
+            }
+        });
+        await this.ctx.storage.put("notifications", allNotifications);
     }
 }

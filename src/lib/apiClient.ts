@@ -1,13 +1,18 @@
-import { User, Idea, Team, ApiResponse, Comment } from '@shared/types';
+import { User, Idea, Team, ApiResponse, Comment, Notification } from '@shared/types';
 const handleResponse = async <T>(response: Response): Promise<T> => {
+  if (response.status === 204) {
+    return undefined as T; // Handle No Content response
+  }
   const json: ApiResponse<T> = await response.json();
   if (!response.ok || !json.success) {
     throw new Error(json.error || 'API request failed');
   }
-  if (json.data === undefined) {
+  if (json.data === undefined && response.status !== 204) {
+    // Allow no data for success responses that don't return data, like mark as read
+    if (json.success) return undefined as T;
     throw new Error('API response missing data');
   }
-  return json.data;
+  return json.data as T;
 };
 export const getIdeas = (): Promise<Idea[]> =>
   fetch('/api/ideas').then(res => handleResponse<Idea[]>(res));
@@ -49,3 +54,11 @@ export const postComment = (ideaId: string, commentData: { authorId: string; con
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(commentData),
   }).then(res => handleResponse<Comment>(res));
+export const getNotifications = (userId: string): Promise<Notification[]> =>
+  fetch(`/api/notifications/${userId}`).then(res => handleResponse<Notification[]>(res));
+export const markNotificationsAsRead = (userId: string, notificationIds: string[]): Promise<void> =>
+  fetch('/api/notifications/read', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, notificationIds }),
+  }).then(res => handleResponse<void>(res));
