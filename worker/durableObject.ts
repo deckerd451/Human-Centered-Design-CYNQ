@@ -4,8 +4,8 @@ import * as supabase from './supabase';
 import { SanitizedEnv, Env } from "./core-utils";
 export class GlobalDurableObject extends DurableObject {
     protected env: SanitizedEnv;
-    constructor(state: DurableObjectState, env: Env) {
-        super(state, env);
+    constructor(ctx: DurableObjectState, env: Env) {
+        super(ctx, env);
         // It's safe to store the env object here, as it's part of the DO's context
         const { GlobalDurableObject, ...sanitizedEnv } = env;
         this.env = sanitizedEnv;
