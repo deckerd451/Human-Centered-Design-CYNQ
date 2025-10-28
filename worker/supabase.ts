@@ -78,7 +78,19 @@ export const getIdeaById = async (id: string): Promise<{ idea: Idea; author: Use
   return { idea, author, team, teamMembers, joinRequesters };
 };
 export const addIdea = async (ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>): Promise<Idea> => {
-  const newIdea = { ...ideaData, id: uuidv4(), upvotes: 0, created_at: new Date().toISOString() };
+  const newIdea = {
+    ...ideaData,
+    id: uuidv4(),
+    upvotes: 0,
+    created_at: new Date().toISOString(),
+    projectBoard: {
+      columns: [
+        { id: 'todo', title: 'To Do', tasks: [] },
+        { id: 'inProgress', title: 'In Progress', tasks: [] },
+        { id: 'done', title: 'Done', tasks: [] },
+      ],
+    },
+  };
   const { data, error } = await getSupabaseClient().from('ideas').insert(newIdea).select();
   if (error) handleError(error, 'addIdea');
   const result = data?.[0];
