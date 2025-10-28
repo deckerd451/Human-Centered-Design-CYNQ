@@ -96,7 +96,8 @@ function runSetupCommands() {
     "rm -rf src/pages/DemoPage.tsx",
     "bun install",
     "rm -rf shared/mock-data.ts",
-    "rm -rf src/pages/DemoPage.tsx"
+    "rm -rf src/pages/DemoPage.tsx",
+    "rm -rf shared/mock-data.ts"
 ];
     
     if (commands.length === 0) {
