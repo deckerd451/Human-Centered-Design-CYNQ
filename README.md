@@ -79,7 +79,7 @@ For the application to connect to the database upon deployment, you must configu
         -   **Value**: `https://hvmotpzhliufzomewzfl.supabase.co`
         -   Make sure to click the **Encrypt** button to secure your variable.
     -   **Variable name**: `SUPABASE_KEY`
-        -   **Value**: *Your Supabase project's `anon` public key.*
+        -   **Value**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2bW90cHpobGl1ZnpvbWV3emZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1NzY2NDUsImV4cCI6MjA1ODE1MjY0NX0.foHTGZVtRjFvxzDfMf1dpp0Zw4XFfD-FPZK-zRnjc6s`
         -   Make sure to click the **Encrypt** button.
 6.  After adding both variables, redeploy your application for the changes to take effect. You can do this from the **Deployments** tab by triggering a new deployment, or by running `bun run deploy` again.
 ## Project Structure
