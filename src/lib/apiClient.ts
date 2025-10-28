@@ -22,8 +22,8 @@ export const getUsers = (): Promise<User[]> =>
   fetch('/api/users').then(res => handleResponse<User[]>(res));
 export const getLeaderboardData = (): Promise<{ users: User[], ideas: Idea[] }> =>
   fetch('/api/leaderboard').then(res => handleResponse<{ users: User[], ideas: Idea[] }>(res));
-export const getIdeaById = (id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[] }> =>
-  fetch(`/api/ideas/${id}`).then(res => handleResponse<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[] }>(res));
+export const getIdeaById = (id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] }> =>
+  fetch(`/api/ideas/${id}`).then(res => handleResponse<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] }>(res));
 export const addIdea = (ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>): Promise<Idea> =>
   fetch('/api/ideas', {
     method: 'POST',
@@ -62,3 +62,15 @@ export const markNotificationsAsRead = (userId: string, notificationIds: string[
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, notificationIds }),
   }).then(res => handleResponse<void>(res));
+export const acceptJoinRequest = (ideaId: string, userId: string): Promise<Team> =>
+  fetch(`/api/ideas/${ideaId}/requests/accept`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  }).then(res => handleResponse<Team>(res));
+export const declineJoinRequest = (ideaId: string, userId: string): Promise<Team> =>
+  fetch(`/api/ideas/${ideaId}/requests/decline`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  }).then(res => handleResponse<Team>(res));

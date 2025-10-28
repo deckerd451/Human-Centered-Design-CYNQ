@@ -97,6 +97,7 @@ const SEED_TEAMS: Team[] = [
     mission: 'To revolutionize code reviews with artificial intelligence.',
     ideaId: 'idea-1',
     members: ['user-1', 'user-3', 'user-5'],
+    joinRequests: [],
   },
   {
     id: 'team-2',
@@ -104,6 +105,7 @@ const SEED_TEAMS: Team[] = [
     mission: 'Building the next generation of collaborative design tools.',
     ideaId: 'idea-3',
     members: ['user-2', 'user-4'],
+    joinRequests: [],
   },
   {
     id: 'team-3',
@@ -111,6 +113,7 @@ const SEED_TEAMS: Team[] = [
     mission: 'Building the future of the decentralized web.',
     ideaId: 'idea-2',
     members: ['user-2', 'user-3'],
+    joinRequests: [],
   },
 ];
 const SEED_COMMENTS: Comment[] = [
@@ -218,7 +221,7 @@ export class GlobalDurableObject extends DurableObject {
         }
         return newComment;
     }
-    async getIdeaById(id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[] } | null> {
+    async getIdeaById(id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null> {
         const ideas = await this.getIdeas();
         const users = await this.getUsers();
         const teams = await this.getTeams();
@@ -228,7 +231,8 @@ export class GlobalDurableObject extends DurableObject {
         if (!author) return null;
         const team = teams.find(t => t.ideaId === id);
         const teamMembers = team ? team.members.map(memberId => users.find(u => u.id === memberId)).filter((u): u is User => !!u) : [];
-        return { idea, author, team, teamMembers };
+        const joinRequesters = team ? (team.joinRequests || []).map(userId => users.find(u => u.id === userId)).filter((u): u is User => !!u) : [];
+        return { idea, author, team, teamMembers, joinRequesters };
     }
     async getLeaderboardData(): Promise<{ users: User[], ideas: Idea[] }> {
         const users = await this.getUsers();
@@ -284,8 +288,8 @@ export class GlobalDurableObject extends DurableObject {
         const users = await this.getUsers();
         let team = teams.find(t => t.ideaId === ideaId);
         if (team) {
-            if (!team.members.includes(userId)) {
-                team.members.push(userId);
+            if (!team.members.includes(userId) && !(team.joinRequests || []).includes(userId)) {
+                team.joinRequests = [...(team.joinRequests || []), userId];
             }
         } else {
             const idea = ideas.find(i => i.id === ideaId);
@@ -294,7 +298,8 @@ export class GlobalDurableObject extends DurableObject {
                 name: `${idea?.title} Team`,
                 mission: `To build ${idea?.title}`,
                 ideaId: ideaId,
-                members: [userId],
+                members: [],
+                joinRequests: [userId],
             };
             teams.push(team);
         }
@@ -306,6 +311,49 @@ export class GlobalDurableObject extends DurableObject {
                 userId: idea.authorId,
                 type: 'join_request',
                 message: `${requester.name} requested to join your team for "${idea.title}".`,
+                link: `/idea/${idea.id}`,
+            });
+        }
+        return team;
+    }
+    async acceptJoinRequest(ideaId: string, userId: string): Promise<Team | null> {
+        const teams = await this.getTeams();
+        const ideas = await this.getIdeas();
+        const team = teams.find(t => t.ideaId === ideaId);
+        if (!team || !(team.joinRequests || []).includes(userId)) {
+            return null;
+        }
+        team.joinRequests = team.joinRequests.filter(id => id !== userId);
+        if (!team.members.includes(userId)) {
+            team.members.push(userId);
+        }
+        await this.ctx.storage.put("teams", teams);
+        const idea = ideas.find(i => i.id === ideaId);
+        if (idea) {
+            await this.createNotification({
+                userId: userId,
+                type: 'join_request_accepted',
+                message: `Your request to join the team for "${idea.title}" has been accepted!`,
+                link: `/idea/${idea.id}`,
+            });
+        }
+        return team;
+    }
+    async declineJoinRequest(ideaId: string, userId: string): Promise<Team | null> {
+        const teams = await this.getTeams();
+        const ideas = await this.getIdeas();
+        const team = teams.find(t => t.ideaId === ideaId);
+        if (!team || !(team.joinRequests || []).includes(userId)) {
+            return null;
+        }
+        team.joinRequests = team.joinRequests.filter(id => id !== userId);
+        await this.ctx.storage.put("teams", teams);
+        const idea = ideas.find(i => i.id === ideaId);
+        if (idea) {
+            await this.createNotification({
+                userId: userId,
+                type: 'join_request_declined',
+                message: `Your request to join the team for "${idea.title}" has been declined.`,
                 link: `/idea/${idea.id}`,
             });
         }

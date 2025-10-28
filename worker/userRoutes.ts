@@ -62,6 +62,23 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const data = await stub.addComment({ ...body, ideaId });
         return c.json({ success: true, data } satisfies ApiResponse<Comment>, 201);
     });
+    // POST to manage join requests
+    app.post('/api/ideas/:ideaId/requests/accept', async (c) => {
+        const ideaId = c.req.param('ideaId');
+        const { userId } = await c.req.json<{ userId: string }>();
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.acceptJoinRequest(ideaId, userId);
+        if (!data) return c.json({ success: false, error: 'Request not found or failed to accept' }, 404);
+        return c.json({ success: true, data } satisfies ApiResponse<Team>);
+    });
+    app.post('/api/ideas/:ideaId/requests/decline', async (c) => {
+        const ideaId = c.req.param('ideaId');
+        const { userId } = await c.req.json<{ userId: string }>();
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.declineJoinRequest(ideaId, userId);
+        if (!data) return c.json({ success: false, error: 'Request not found or failed to decline' }, 404);
+        return c.json({ success: true, data } satisfies ApiResponse<Team>);
+    });
     // PUT to update resources
     app.put('/api/users/me', async (c) => {
         const body = await c.req.json<{ userId: string; updates: Partial<User> }>();
