@@ -9,7 +9,16 @@ interface SupabaseFetchOptions {
   query?: string;
   rpc?: boolean;
 }
-const shouldUseMockData = (env: SanitizedEnv) => !env.SUPABASE_URL || !env.SUPABASE_KEY;
+const shouldUseMockData = (env: SanitizedEnv) => {
+  if (!env.SUPABASE_URL || !env.SUPABASE_KEY) {
+    return true;
+  }
+  if (!env.SUPABASE_URL.startsWith('http')) {
+    console.error(`Invalid SUPABASE_URL: "${env.SUPABASE_URL}". Must start with 'http'. Using mock data.`);
+    return true;
+  }
+  return false;
+};
 const supabaseFetch = async <T>(env: SanitizedEnv, { table, method = 'GET', body = null, query = '', rpc = false }: SupabaseFetchOptions): Promise<T> => {
   const url = rpc
     ? `${env.SUPABASE_URL}/rpc/${table}`
