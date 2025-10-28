@@ -122,6 +122,7 @@ export function SynapsePage() {
         console.error("Failed to load data for graph:", error);
         setLoading(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const onConnect = useCallback((params: any) => setEdges((eds) => [...eds, params]), [setEdges]);
   return (
