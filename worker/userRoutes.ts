@@ -4,7 +4,7 @@ import { Env } from './core-utils';
 import type { ApiResponse, Idea, Team, User, Comment, Notification } from '@shared/types';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
     // Serve static assets from the client build
-    app.use('/assets/*', serveStatic({ root: './dist/client' }));
+    app.use('/assets/*', serveStatic({ root: './dist/client', manifest: {} }));
 
     // API routes
     app.get('/api/ideas', async (c) => {
@@ -144,5 +144,5 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     });
 
     // This must be the last route to handle client-side routing
-    app.get('*', serveStatic({ path: './dist/client/index.html' }));
+    app.get('*', serveStatic({ path: './dist/client/index.html', manifest: {} }));
 }
