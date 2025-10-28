@@ -2,6 +2,7 @@ import React from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { UserProfileNav } from "@/components/UserProfileNav";
+import { Notifications } from "@/components/Notifications";
 type AppLayoutProps = {
   children: React.ReactNode;
   container?: boolean;
@@ -16,7 +17,8 @@ export function AppLayout({ children, container = false, className, contentClass
         <div className="absolute left-2 top-2 z-20">
           <SidebarTrigger />
         </div>
-        <div className="absolute right-4 top-2 z-20">
+        <div className="absolute right-4 top-2 z-20 flex items-center gap-2">
+          <Notifications />
           <UserProfileNav />
         </div>
         {container ? (
