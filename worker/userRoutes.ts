@@ -1,12 +1,9 @@
 import { Hono } from "hono";
-// @ts-expect-error - __STATIC_CONTENT_MANIFEST is a virtual module provided by wrangler
-import manifest from '__STATIC_CONTENT_MANIFEST';
-import { serveStatic } from 'hono/cloudflare-workers';
+
 import { Env } from './core-utils';
 import type { ApiResponse, Idea, Team, User, Comment, Notification } from '@shared/types';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
-    // Serve static assets from the client build
-    app.use('/assets/*', serveStatic({ root: './dist/client', manifest }));
+
 
     // API routes
     app.get('/api/ideas', async (c) => {
@@ -145,6 +142,5 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         return c.json({ success: true }, 200);
     });
 
-    // This must be the last route to handle client-side routing
-    app.get('*', serveStatic({ path: './dist/client/index.html', manifest }));
+
 }
