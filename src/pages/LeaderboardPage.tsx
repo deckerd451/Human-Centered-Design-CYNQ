@@ -7,6 +7,7 @@ import { User, Idea } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "react-router-dom";
 const LeaderboardSkeleton = () => (
   <div className="space-y-4">
     {[...Array(5)].map((_, i) => (
@@ -76,21 +77,25 @@ export function LeaderboardPage() {
             </CardHeader>
             <CardContent>
               {loading ? <LeaderboardSkeleton /> : (
-                <ul className="space-y-4">
+                <ul className="space-y-1">
                   {leaderboard?.ideas.map((idea, index) => (
-                    <li key={idea.id} className="flex items-start gap-4">
-                      <span className="text-lg font-bold text-muted-foreground w-6 text-center pt-1">{index + 1}</span>
-                      <div className="flex-1">
-                        <p className="font-semibold">{idea.title}</p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 text-yellow-500" />
-                            <span>{idea.upvotes} upvotes</span>
+                    <li key={idea.id}>
+                      <Link to={`/idea/${idea.id}`} className="block p-3 -mx-3 rounded-lg hover:bg-muted transition-colors">
+                        <div className="flex items-start gap-4">
+                          <span className="text-lg font-bold text-muted-foreground w-6 text-center pt-1">{index + 1}</span>
+                          <div className="flex-1">
+                            <p className="font-semibold">{idea.title}</p>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                              <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 text-yellow-500" />
+                                <span>{idea.upvotes} upvotes</span>
+                              </div>
+                              <span>•</span>
+                              <span>{idea.createdAt}</span>
+                            </div>
                           </div>
-                          <span>•</span>
-                          <span>{idea.createdAt}</span>
                         </div>
-                      </div>
+                      </Link>
                     </li>
                   ))}
                 </ul>

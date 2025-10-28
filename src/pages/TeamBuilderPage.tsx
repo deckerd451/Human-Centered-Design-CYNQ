@@ -11,58 +11,63 @@ import { useState, useEffect, useMemo } from "react";
 import { getIdeas, getTeams, getUsers } from "@/lib/apiClient";
 import { Idea, Team, User } from "@/lib/types";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 const TeamBuilderCard = ({ idea, team, users }: { idea: Idea; team?: Team; users: User[] }) => {
   const teamMembers = useMemo(() => {
     if (!team) return [];
     return team.members.map(memberId => users.find(u => u.id === memberId)).filter(Boolean) as User[];
   }, [team, users]);
-  const handleJoinRequest = () => {
+  const handleJoinRequest = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     toast.success(`Request sent to join team for "${idea.title}"!`);
   };
   return (
     <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }}>
-      <Card className="h-full flex flex-col">
-        <CardHeader>
-          <CardTitle>{idea.title}</CardTitle>
-          <CardDescription className="line-clamp-2">{team?.mission || idea.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-grow space-y-4">
-          <div>
-            <h4 className="text-sm font-semibold mb-2">Skills Needed</h4>
-            <div className="flex flex-wrap gap-2">
-              {idea.skillsNeeded.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>)}
-            </div>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold mb-2">Current Team</h4>
-            {teamMembers.length > 0 ? (
-              <div className="flex items-center space-x-2">
-                <TooltipProvider>
-                  {teamMembers.map(member => (
-                    <Tooltip key={member.id}>
-                      <TooltipTrigger asChild>
-                        <Avatar className="h-8 w-8 border-2 border-background">
-                          <AvatarImage src={member.avatarUrl} alt={member.name} />
-                          <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                      </TooltipTrigger>
-                      <TooltipContent>{member.name}</TooltipContent>
-                    </Tooltip>
-                  ))}
-                </TooltipProvider>
+      <Link to={`/idea/${idea.id}`} className="block h-full">
+        <Card className="h-full flex flex-col hover:border-primary/50 transition-colors duration-300">
+          <CardHeader>
+            <CardTitle>{idea.title}</CardTitle>
+            <CardDescription className="line-clamp-2">{team?.mission || idea.description}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow space-y-4">
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Skills Needed</h4>
+              <div className="flex flex-wrap gap-2">
+                {idea.skillsNeeded.map(skill => <Badge key={skill} variant="secondary">{skill}</Badge>)}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No members yet. Be the first!</p>
-            )}
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={handleJoinRequest}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Request to Join
-          </Button>
-        </CardFooter>
-      </Card>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Current Team</h4>
+              {teamMembers.length > 0 ? (
+                <div className="flex items-center space-x-2">
+                  <TooltipProvider>
+                    {teamMembers.map(member => (
+                      <Tooltip key={member.id}>
+                        <TooltipTrigger asChild>
+                          <Avatar className="h-8 w-8 border-2 border-background">
+                            <AvatarImage src={member.avatarUrl} alt={member.name} />
+                            <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent>{member.name}</TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </TooltipProvider>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No members yet. Be the first!</p>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" onClick={handleJoinRequest}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Request to Join
+            </Button>
+          </CardFooter>
+        </Card>
+      </Link>
     </motion.div>
   );
 };

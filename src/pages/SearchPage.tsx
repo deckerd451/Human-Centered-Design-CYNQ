@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from "react";
 import { getIdeas } from "@/lib/apiClient";
 import { Idea } from "@/lib/types";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 const IdeaCard = ({ idea }: { idea: Idea }) => (
   <motion.div
     layout
@@ -15,8 +16,9 @@ const IdeaCard = ({ idea }: { idea: Idea }) => (
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0, scale: 0.9 }}
     transition={{ duration: 0.3 }}
+    className="h-full"
   >
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col hover:border-primary/50 transition-colors duration-300">
       <CardHeader>
         <CardTitle>{idea.title}</CardTitle>
         <CardDescription className="line-clamp-3">{idea.description}</CardDescription>
@@ -156,7 +158,9 @@ export function SearchPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <AnimatePresence>
                 {filteredIdeas.map(idea => (
-                  <IdeaCard key={idea.id} idea={idea} />
+                  <Link to={`/idea/${idea.id}`} key={idea.id} className="block">
+                    <IdeaCard idea={idea} />
+                  </Link>
                 ))}
               </AnimatePresence>
             </div>
