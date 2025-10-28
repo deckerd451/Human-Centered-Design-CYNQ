@@ -23,6 +23,7 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { formatDate } from "@/lib/helpers";
 const commentSchema = z.object({
   content: z.string().min(1, "Comment cannot be empty.").max(500, "Comment is too long."),
 });
@@ -86,7 +87,7 @@ const CommentsSection = ({ ideaId }: { ideaId: string }) => {
                   <div className="flex-1">
                     <div className="flex items-baseline gap-2">
                       <p className="font-semibold">{author?.name}</p>
-                      <p className="text-xs text-muted-foreground">{comment.createdAt}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</p>
                     </div>
                     <p className="text-foreground/90">{comment.content}</p>
                   </div>
@@ -365,7 +366,7 @@ export function IdeaDetailPage() {
           <div className="flex items-center gap-4 text-muted-foreground">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>Posted {idea.createdAt}</span>
+              <span>Posted {formatDate(idea.createdAt)}</span>
             </div>
             <div className="flex items-center gap-2">
               <Tag className="h-4 w-4" />
