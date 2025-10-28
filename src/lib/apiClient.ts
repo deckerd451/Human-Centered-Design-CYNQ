@@ -115,7 +115,7 @@ const mockTeams: Team[] = [
 // Mock API Functions
 const simulateDelay = <T>(data: T, delay = 500): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(data), delay));
-export const getIdeas = (): Promise<Idea[]> => simulateDelay(mockIdeas);
+export const getIdeas = (): Promise<Idea[]> => simulateDelay([...mockIdeas].reverse());
 export const getTeams = (): Promise<Team[]> => simulateDelay(mockTeams);
 export const getUsers = (): Promise<User[]> => simulateDelay(mockUsers);
 export const getLeaderboardData = (): Promise<{ users: User[], ideas: Idea[] }> =>
@@ -136,4 +136,14 @@ export const getIdeaById = (id: string): Promise<{ idea: Idea; author: User; tea
   const team = mockTeams.find(t => t.ideaId === id);
   const teamMembers = team ? team.members.map(memberId => mockUsers.find(u => u.id === memberId)).filter(Boolean) as User[] : [];
   return simulateDelay({ idea, author, team, teamMembers }, 700);
+};
+export const addIdea = (ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>): Promise<Idea> => {
+  const newIdea: Idea = {
+    ...ideaData,
+    id: `idea-${Date.now()}`,
+    createdAt: 'Just now',
+    upvotes: 0,
+  };
+  mockIdeas.push(newIdea);
+  return simulateDelay(newIdea, 800);
 };

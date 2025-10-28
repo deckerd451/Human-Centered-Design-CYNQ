@@ -5,26 +5,38 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Lightbulb, Search } from 'lucide-react';
+import { ArrowRight, Lightbulb, Search, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { getIdeas } from '@/lib/apiClient';
+import { getIdeas, addIdea } from '@/lib/apiClient';
 import { Idea } from '@/lib/types';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Toaster, toast } from 'sonner';
+import { useAuthStore } from '@/stores/authStore';
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
-const RecentIdeas = () => {
+const ideaSchema = z.object({
+  title: z.string().min(5, 'Title must be at least 5 characters long.'),
+  description: z.string().min(20, 'Description must be at least 20 characters long.'),
+  tags: z.string().min(1, 'Please add at least one tag.'),
+  skillsNeeded: z.string().min(1, 'Please list at least one skill.'),
+});
+type IdeaFormData = z.infer<typeof ideaSchema>;
+const RecentIdeas = ({ refreshKey }: { refreshKey: number }) => {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    setLoading(true);
     getIdeas().then(data => {
       setIdeas(data.slice(0, 3)); // Show top 3 recent ideas
       setLoading(false);
     });
-  }, []);
+  }, [refreshKey]);
   if (loading) {
     return (
       <div className="space-y-4">
@@ -37,17 +49,44 @@ const RecentIdeas = () => {
   return (
     <div className="space-y-4">
       {ideas.map(idea => (
-        <div key={idea.id} className="p-4 border rounded-lg bg-background/50">
+        <Link to={`/idea/${idea.id}`} key={idea.id} className="block p-4 border rounded-lg bg-background/50 hover:border-primary/50 transition-colors">
           <h4 className="font-semibold">{idea.title}</h4>
           <p className="text-sm text-muted-foreground truncate">{idea.description}</p>
-        </div>
+        </Link>
       ))}
     </div>
   );
 };
 export function HomePage() {
+  const [refreshKey, setRefreshKey] = useState(0);
+  const user = useAuthStore((s) => s.user);
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<IdeaFormData>({
+    resolver: zodResolver(ideaSchema),
+  });
+  const onSubmit: SubmitHandler<IdeaFormData> = async (data) => {
+    if (!user) {
+      toast.error("You must be logged in to submit an idea.");
+      return;
+    }
+    try {
+      const newIdeaData = {
+        title: data.title,
+        description: data.description,
+        tags: data.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+        skillsNeeded: data.skillsNeeded.split(',').map(skill => skill.trim()).filter(Boolean),
+        authorId: user.id,
+      };
+      await addIdea(newIdeaData);
+      toast.success("Your idea has been submitted successfully!");
+      reset();
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      toast.error("Failed to submit idea. Please try again.");
+    }
+  };
   return (
     <AppLayout>
+      <Toaster />
       <main className="relative flex items-center justify-center min-h-screen bg-background overflow-hidden p-4">
         <NeuralBackground />
         <div className="relative z-10 w-full max-w-6xl mx-auto">
@@ -61,20 +100,33 @@ export function HomePage() {
                   </CardTitle>
                   <CardDescription>Have a brilliant idea? Share it with the community.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="idea-title">Idea Title</Label>
-                    <Input id="idea-title" placeholder="e.g., AI-Powered Code Reviewer" />
-                  </div>
-                  <div>
-                    <Label htmlFor="idea-description">Description</Label>
-                    <Textarea id="idea-description" placeholder="Describe your idea in a few sentences." />
-                  </div>
-                  <div>
-                    <Label htmlFor="idea-tags">Tags (comma-separated)</Label>
-                    <Input id="idea-tags" placeholder="e.g., AI, Developer Tools, SaaS" />
-                  </div>
-                  <Button className="w-full font-semibold">Submit Idea</Button>
+                <CardContent>
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                    <div>
+                      <Label htmlFor="idea-title">Idea Title</Label>
+                      <Input id="idea-title" placeholder="e.g., AI-Powered Code Reviewer" {...register('title')} />
+                      {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title.message}</p>}
+                    </div>
+                    <div>
+                      <Label htmlFor="idea-description">Description</Label>
+                      <Textarea id="idea-description" placeholder="Describe your idea in a few sentences." {...register('description')} />
+                      {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description.message}</p>}
+                    </div>
+                    <div>
+                      <Label htmlFor="idea-tags">Tags (comma-separated)</Label>
+                      <Input id="idea-tags" placeholder="e.g., AI, Developer Tools, SaaS" {...register('tags')} />
+                      {errors.tags && <p className="text-sm text-red-500 mt-1">{errors.tags.message}</p>}
+                    </div>
+                    <div>
+                      <Label htmlFor="idea-skills">Skills Needed (comma-separated)</Label>
+                      <Input id="idea-skills" placeholder="e.g., React, Python, UI/UX" {...register('skillsNeeded')} />
+                      {errors.skillsNeeded && <p className="text-sm text-red-500 mt-1">{errors.skillsNeeded.message}</p>}
+                    </div>
+                    <Button type="submit" className="w-full font-semibold" disabled={isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Submit Idea
+                    </Button>
+                  </form>
                 </CardContent>
               </Card>
             </motion.div>
@@ -90,7 +142,7 @@ export function HomePage() {
                 <CardContent className="space-y-6">
                   <div>
                     <h3 className="mb-4 text-lg font-medium">Recently Added</h3>
-                    <RecentIdeas />
+                    <RecentIdeas refreshKey={refreshKey} />
                   </div>
                   <Button asChild className="w-full font-semibold" variant="outline">
                     <Link to="/search">
