@@ -10,10 +10,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         }
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
         const { success, token } = await stub.sendMagicLink(email);
-        // In a real app, the token would be emailed, not returned.
-        // For this simulation, we can return it to aid frontend development if needed,
-        // but a simple success message is more realistic.
-        return c.json({ success } satisfies ApiResponse);
+        // In a real app, the token would be emailed. For this simulation, we return it.
+        return c.json({ success, data: { token } } satisfies ApiResponse<{ token?: string }>);
     });
     app.post('/api/auth/verify-token', async (c) => {
         const { token } = await c.req.json<{ token: string }>();

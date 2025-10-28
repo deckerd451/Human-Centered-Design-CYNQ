@@ -5,6 +5,7 @@ type AuthState = 'disconnected' | 'awaitingMagicLink' | 'authenticating' | 'conn
 interface AuthStore {
   authState: AuthState;
   user: User | null;
+  magicLinkToken: string | null;
   sendMagicLink: (email: string) => Promise<void>;
   verifyTokenAndLogin: (token: string) => Promise<void>;
   logout: () => void;
@@ -15,23 +16,24 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>((set, get) => ({
   authState: 'disconnected',
   user: null,
+  magicLinkToken: null,
   sendMagicLink: async (email: string) => {
-    await apiSendMagicLink(email);
-    set({ authState: 'awaitingMagicLink' });
+    const { token } = await apiSendMagicLink(email);
+    set({ authState: 'awaitingMagicLink', magicLinkToken: token || null });
   },
   verifyTokenAndLogin: async (token: string) => {
     set({ authState: 'authenticating' });
     try {
       const user = await verifyMagicToken(token);
-      set({ authState: 'connected', user });
+      set({ authState: 'connected', user, magicLinkToken: null });
     } catch (error) {
       console.error("Magic link verification failed:", error);
-      set({ authState: 'disconnected', user: null });
+      set({ authState: 'disconnected', user: null, magicLinkToken: null });
       throw error;
     }
   },
   logout: () => {
-    set({ authState: 'disconnected', user: null });
+    set({ authState: 'disconnected', user: null, magicLinkToken: null });
   },
   updateUser: async (data) => {
     const currentUser = get().user;
