@@ -7,14 +7,14 @@ interface ProtectedRouteProps {
 }
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const authState = useAuthStore((s) => s.authState);
-  if (authState === 'connecting') {
+  if (authState === 'authenticating') {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
-  if (authState === 'disconnected') {
+  if (authState === 'disconnected' || authState === 'awaitingMagicLink') {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;

@@ -5,6 +5,7 @@ const SEED_USERS: User[] = [
     id: 'user-1',
     name: 'Alex Innovator',
     username: 'alex_innovator',
+    email: 'alex@example.com',
     avatarUrl: 'https://github.com/shadcn.png',
     bio: 'Building the future.',
     skills: ['React', 'TypeScript', 'Go'],
@@ -14,6 +15,7 @@ const SEED_USERS: User[] = [
     id: 'user-2',
     name: 'Bella Builder',
     username: 'bella_builder',
+    email: 'bella@example.com',
     avatarUrl: 'https://uifaces.co/our-content/donated/xP_Yp-HO.jpg',
     bio: 'Designer and frontend expert.',
     skills: ['Figma', 'UI/UX', 'React'],
@@ -23,6 +25,7 @@ const SEED_USERS: User[] = [
     id: 'user-3',
     name: 'Charlie Coder',
     username: 'charlie_coder',
+    email: 'charlie@example.com',
     avatarUrl: 'https://randomuser.me/api/portraits/men/75.jpg',
     bio: 'Backend and infrastructure guru.',
     skills: ['Go', 'Python', 'Kubernetes'],
@@ -32,6 +35,7 @@ const SEED_USERS: User[] = [
     id: 'user-4',
     name: 'Dana Designer',
     username: 'dana_designer',
+    email: 'dana@example.com',
     avatarUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
     bio: 'Crafting beautiful and intuitive user experiences.',
     skills: ['UI/UX Design', 'Figma', 'Prototyping', 'CSS'],
@@ -41,6 +45,7 @@ const SEED_USERS: User[] = [
     id: 'user-5',
     name: 'Evan Engineer',
     username: 'evan_engineer',
+    email: 'evan@example.com',
     avatarUrl: 'https://randomuser.me/api/portraits/men/43.jpg',
     bio: 'DevOps and cloud infrastructure specialist.',
     skills: ['AWS', 'Docker', 'Kubernetes', 'Terraform'],
@@ -164,6 +169,7 @@ export class SupabaseClient {
   private teams: Team[];
   private comments: Comment[];
   private notifications: Notification[];
+  private magicTokens = new Map<string, string>(); // token -> userId
   constructor() {
     // Deep copy to prevent mutations across sessions in a local dev environment
     this.users = JSON.parse(JSON.stringify(SEED_USERS));
@@ -171,6 +177,26 @@ export class SupabaseClient {
     this.teams = JSON.parse(JSON.stringify(SEED_TEAMS));
     this.comments = JSON.parse(JSON.stringify(SEED_COMMENTS));
     this.notifications = JSON.parse(JSON.stringify(SEED_NOTIFICATIONS));
+  }
+  async sendMagicLink(email: string): Promise<{ success: boolean; token?: string }> {
+    const user = this.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (!user) {
+      console.log(`Magic link requested for non-existent email: ${email}`);
+      return { success: true };
+    }
+    const token = crypto.randomUUID();
+    this.magicTokens.set(token, user.id);
+    console.log(`Magic link for ${email} (${user.name}): /auth/callback?token=${token}`);
+    return { success: true, token };
+  }
+  async verifyMagicToken(token: string): Promise<User | null> {
+    const userId = this.magicTokens.get(token);
+    if (!userId) {
+      return null;
+    }
+    this.magicTokens.delete(token); // Token is single-use
+    const user = this.users.find(u => u.id === userId);
+    return user || null;
   }
   async getUsers(): Promise<User[]> {
     return this.users;
