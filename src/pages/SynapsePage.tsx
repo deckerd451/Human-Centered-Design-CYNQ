@@ -2,7 +2,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrainCircuit, Loader2 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
-import ReactFlow, {
+import {
+  ReactFlow,
   Controls,
   Background,
   MiniMap,
@@ -11,8 +12,8 @@ import ReactFlow, {
   useNodesState,
   useEdgesState,
   Position,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { getIdeas, getUsers, getTeams } from "@/lib/apiClient";
 import { Idea, User, Team } from "@shared/types";
 import { useTheme } from "@/hooks/use-theme";
