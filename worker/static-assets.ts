@@ -1,7 +1,5 @@
 import { Hono } from 'hono';
-// @ts-expect-error
 import { serveStatic } from 'hono/cloudflare-workers';
-import manifest from '__STATIC_CONTENT_MANIFEST';
 import { Env } from './core-utils';
 /**
  * Configures the Hono app to serve static assets.
@@ -14,8 +12,8 @@ import { Env } from './core-utils';
  */
 export function configureStaticAssets(app: Hono<{ Bindings: Env }>) {
   // Serve bundled static assets (e.g., /assets/index-*.js)
-  app.use('/assets/*', serveStatic({ root: './dist/client', manifest }));
+  app.use('/assets/*', serveStatic({ root: './dist/client' }));
   // Serve all other non-API routes from the single-page app's entry point.
   // This is the "SPA mode" handler.
-  app.get('*', serveStatic({ path: './dist/client/index.html', manifest }));
+  app.get('*', serveStatic({ path: './dist/client/index.html' }));
 }
