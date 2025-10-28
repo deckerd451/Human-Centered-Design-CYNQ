@@ -47,6 +47,4 @@ app.post('/api/client-errors', async (c) => {
 app.notFound((c) => c.json({ success: false, error: 'Not Found' }, 404));
 app.onError((err, c) => { console.error(`[ERROR] ${err}`); return c.json({ success: false, error: 'Internal Server Error' }, 500); });
 
-console.log(`Server is running`)
-
 export default { fetch: app.fetch } satisfies ExportedHandler<Env>;
