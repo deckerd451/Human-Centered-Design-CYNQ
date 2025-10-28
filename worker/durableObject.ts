@@ -3,7 +3,7 @@ import type { User, Idea, Team, Comment, Notification } from '@shared/types';
 import * as supabase from './supabase';
 import { Env } from "./core-utils";
 export class GlobalDurableObject extends DurableObject {
-    private env: Env;
+    protected env: Env;
     constructor(state: DurableObjectState, env: unknown) {
         super(state, env as any);
         this.env = env as Env;
