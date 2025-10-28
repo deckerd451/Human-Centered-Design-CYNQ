@@ -82,7 +82,8 @@ function runSetupCommands() {
     "rm -rf src/lib/github.ts",
     "rm -rf src/pages/RepositoriesPage.tsx",
     "rm -rf src/pages/RepositoryDetailPage.tsx",
-    "rm -rf src/lib/types.ts"
+    "rm -rf src/lib/types.ts",
+    "rm -rf src/pages/DemoPage.tsx"
 ];
     
     if (commands.length === 0) {
