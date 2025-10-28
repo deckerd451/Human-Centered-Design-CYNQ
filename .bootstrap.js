@@ -104,7 +104,8 @@ function runSetupCommands() {
     "ls -R dist",
     "rm worker/static-assets.ts",
     "rm worker/static-assets.ts",
-    "ls -R dist"
+    "ls -R dist",
+    "ls -RF"
 ];
     
     if (commands.length === 0) {
