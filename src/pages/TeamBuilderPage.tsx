@@ -8,19 +8,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "@/components/ui/sonner";
 import { Users, UserPlus, Tag, Frown } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { getIdeas, getTeams, getUsers } from "@/lib/apiClient";
+import { getIdeas, getTeams, getUsers, requestToJoinIdea } from "@/lib/apiClient";
 import { Idea, Team, User } from "@/lib/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-const TeamBuilderCard = ({ idea, team, users }: { idea: Idea; team?: Team; users: User[] }) => {
+import { useAuthStore } from "@/stores/authStore";
+const TeamBuilderCard = ({ idea, team, users, onJoinRequest }: { idea: Idea; team?: Team; users: User[]; onJoinRequest: (ideaId: string) => void }) => {
+  const currentUser = useAuthStore((s) => s.user);
   const teamMembers = useMemo(() => {
     if (!team) return [];
     return team.members.map(memberId => users.find(u => u.id === memberId)).filter(Boolean) as User[];
   }, [team, users]);
+  const isUserInTeam = currentUser && team?.members.includes(currentUser.id);
   const handleJoinRequest = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toast.success(`Request sent to join team for "${idea.title}"!`);
+    if (!isUserInTeam) {
+      onJoinRequest(idea.id);
+    }
   };
   return (
     <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.3 }}>
@@ -61,9 +66,9 @@ const TeamBuilderCard = ({ idea, team, users }: { idea: Idea; team?: Team; users
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" onClick={handleJoinRequest}>
+            <Button className="w-full" onClick={handleJoinRequest} disabled={!!isUserInTeam}>
               <UserPlus className="mr-2 h-4 w-4" />
-              Request to Join
+              {isUserInTeam ? "Joined" : "Request to Join"}
             </Button>
           </CardFooter>
         </Card>
@@ -103,6 +108,7 @@ const TeamBuilderSkeleton = () => (
   </div>
 );
 export function TeamBuilderPage() {
+  const currentUser = useAuthStore((s) => s.user);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -117,6 +123,23 @@ export function TeamBuilderPage() {
       setLoading(false);
     });
   }, []);
+  const handleJoinRequest = async (ideaId: string) => {
+    if (!currentUser) {
+      toast.error("You must be logged in to join a team.");
+      return;
+    }
+    try {
+      const updatedTeam = await requestToJoinIdea(ideaId, currentUser.id);
+      setTeams(prevTeams => {
+        const otherTeams = prevTeams.filter(t => t.id !== updatedTeam.id);
+        return [...otherTeams, updatedTeam];
+      });
+      const idea = ideas.find(i => i.id === ideaId);
+      toast.success(`Request sent to join team for "${idea?.title}"!`);
+    } catch (error) {
+      toast.error("Failed to send join request.");
+    }
+  };
   const allSkills = useMemo(() => {
     const skills = new Set<string>();
     ideas.forEach(idea => idea.skillsNeeded.forEach(skill => skills.add(skill)));
@@ -170,7 +193,7 @@ export function TeamBuilderPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <AnimatePresence>
                 {filteredIdeas.map(idea => (
-                  <TeamBuilderCard key={idea.id} idea={idea} team={teams.find(t => t.ideaId === idea.id)} users={users} />
+                  <TeamBuilderCard key={idea.id} idea={idea} team={teams.find(t => t.ideaId === idea.id)} users={users} onJoinRequest={handleJoinRequest} />
                 ))}
               </AnimatePresence>
             </div>
