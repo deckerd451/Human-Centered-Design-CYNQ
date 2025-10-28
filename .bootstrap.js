@@ -90,7 +90,8 @@ function runSetupCommands() {
     "bun add @supabase/supabase-js",
     "bun install @xyflow/react",
     "rm -rf worker/supabaseClient.ts",
-    "rm -rf src/pages/DemoPage.tsx"
+    "rm -rf src/pages/DemoPage.tsx",
+    "bun add node-fetch"
 ];
     
     if (commands.length === 0) {
