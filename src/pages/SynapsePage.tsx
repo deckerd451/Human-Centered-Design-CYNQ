@@ -122,7 +122,7 @@ export function SynapsePage() {
         console.error("Failed to load data for graph:", error);
         setLoading(false);
       });
-  }, [setNodes, setEdges]);
+  }, []);
   const onConnect = useCallback((params: any) => setEdges((eds) => [...eds, params]), [setEdges]);
   return (
     <AppLayout>
