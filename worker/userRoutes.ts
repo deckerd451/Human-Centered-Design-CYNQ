@@ -5,7 +5,6 @@ import type { ApiResponse, Idea, Team, User, Comment, Notification } from '@shar
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
     // Serve static assets from the client build
     app.use('/assets/*', serveStatic({ root: './dist/client' }));
-    app.get('*', serveStatic({ path: './dist/client/index.html' }));
 
     // API routes
     app.get('/api/ideas', async (c) => {
@@ -143,4 +142,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         await stub.deleteIdea(id);
         return c.json({ success: true }, 200);
     });
+
+    // This must be the last route to handle client-side routing
+    app.get('*', serveStatic({ path: './dist/client/index.html' }));
 }
