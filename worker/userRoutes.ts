@@ -2,55 +2,32 @@ import { Hono } from "hono";
 import { Env } from './core-utils';
 import type { ApiResponse, Idea, Team, User, Comment, Notification } from '@shared/types';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
-    // AUTH routes
-    app.post('/api/auth/magic-link', async (c) => {
-        const { email } = await c.req.json<{ email: string }>();
-        if (!email) {
-            return c.json({ success: false, error: 'Email is required' }, 400);
-        }
-        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const { success, token } = await stub.sendMagicLink(email, c.env);
-        // In a real app, the token would be emailed. For this simulation, we return it.
-        return c.json({ success, data: { token } } satisfies ApiResponse<{ token?: string }>);
-    });
-    app.post('/api/auth/verify-token', async (c) => {
-        const { token } = await c.req.json<{ token: string }>();
-        if (!token) {
-            return c.json({ success: false, error: 'Token is required' }, 400);
-        }
-        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const user = await stub.verifyMagicToken(token, c.env);
-        if (!user) {
-            return c.json({ success: false, error: 'Invalid or expired token' }, 401);
-        }
-        return c.json({ success: true, data: user } satisfies ApiResponse<User>);
-    });
     // GET all resources
     app.get('/api/ideas', async (c) => {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.getIdeas(c.env);
+        const data = await stub.getIdeas();
         return c.json({ success: true, data: data.reverse() } satisfies ApiResponse<Idea[]>);
     });
     app.get('/api/teams', async (c) => {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.getTeams(c.env);
+        const data = await stub.getTeams();
         return c.json({ success: true, data } satisfies ApiResponse<Team[]>);
     });
     app.get('/api/users', async (c) => {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.getUsers(c.env);
+        const data = await stub.getUsers();
         return c.json({ success: true, data } satisfies ApiResponse<User[]>);
     });
     app.get('/api/leaderboard', async (c) => {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.getLeaderboardData(c.env);
+        const data = await stub.getLeaderboardData();
         return c.json({ success: true, data } satisfies ApiResponse<{ users: User[], ideas: Idea[] }>);
     });
     // GET single resource
     app.get('/api/ideas/:id', async (c) => {
         const id = c.req.param('id');
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.getIdeaById(id, c.env);
+        const data = await stub.getIdeaById(id);
         if (!data) {
             return c.json({ success: false, error: 'Idea not found' }, 404);
         }
@@ -60,21 +37,21 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     app.get('/api/ideas/:id/comments', async (c) => {
         const id = c.req.param('id');
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.getCommentsForIdea(id, c.env);
+        const data = await stub.getCommentsForIdea(id);
         return c.json({ success: true, data } satisfies ApiResponse<Comment[]>);
     });
     // GET notifications for a user
     app.get('/api/notifications/:userId', async (c) => {
         const userId = c.req.param('userId');
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.getNotificationsForUser(userId, c.env);
+        const data = await stub.getNotificationsForUser(userId);
         return c.json({ success: true, data } satisfies ApiResponse<Notification[]>);
     });
     // POST to create a resource
     app.post('/api/ideas', async (c) => {
         const body = await c.req.json<Omit<Idea, 'id' | 'createdAt' | 'upvotes'>>();
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.addIdea(body, c.env);
+        const data = await stub.addIdea(body);
         return c.json({ success: true, data } satisfies ApiResponse<Idea>, 201);
     });
     // POST a comment to an idea
@@ -82,7 +59,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const ideaId = c.req.param('id');
         const body = await c.req.json<{ authorId: string; content: string }>();
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.addComment({ ...body, ideaId }, c.env);
+        const data = await stub.addComment({ ...body, ideaId });
         return c.json({ success: true, data } satisfies ApiResponse<Comment>, 201);
     });
     // POST to manage join requests
@@ -90,7 +67,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const ideaId = c.req.param('ideaId');
         const { userId } = await c.req.json<{ userId: string }>();
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.acceptJoinRequest(ideaId, userId, c.env);
+        const data = await stub.acceptJoinRequest(ideaId, userId);
         if (!data) return c.json({ success: false, error: 'Request not found or failed to accept' }, 404);
         return c.json({ success: true, data } satisfies ApiResponse<Team>);
     });
@@ -98,7 +75,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const ideaId = c.req.param('ideaId');
         const { userId } = await c.req.json<{ userId: string }>();
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.declineJoinRequest(ideaId, userId, c.env);
+        const data = await stub.declineJoinRequest(ideaId, userId);
         if (!data) return c.json({ success: false, error: 'Request not found or failed to decline' }, 404);
         return c.json({ success: true, data } satisfies ApiResponse<Team>);
     });
@@ -109,7 +86,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
             return c.json({ success: false, error: 'User ID and updates are required' }, 400);
         }
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.updateUser(body.userId, body.updates, c.env);
+        const data = await stub.updateUser(body.userId, body.updates);
         if (!data) {
             return c.json({ success: false, error: 'User not found' }, 404);
         }
@@ -119,7 +96,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const id = c.req.param('id');
         const body = await c.req.json<Partial<Idea>>();
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.updateIdea(id, body, c.env);
+        const data = await stub.updateIdea(id, body);
         if (!data) {
             return c.json({ success: false, error: 'Idea not found or update failed' }, 404);
         }
@@ -128,7 +105,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     app.put('/api/ideas/:id/upvote', async (c) => {
         const id = c.req.param('id');
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.upvoteIdea(id, c.env);
+        const data = await stub.upvoteIdea(id);
         if (!data) {
             return c.json({ success: false, error: 'Idea not found' }, 404);
         }
@@ -141,7 +118,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
             return c.json({ success: false, error: 'User ID is required' }, 400);
         }
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.requestToJoinIdea(id, userId, c.env);
+        const data = await stub.requestToJoinIdea(id, userId);
         return c.json({ success: true, data } satisfies ApiResponse<Team>);
     });
     // PUT to mark notifications as read
@@ -151,14 +128,14 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
             return c.json({ success: false, error: 'User ID and notification IDs are required' }, 400);
         }
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        await stub.markNotificationsAsRead(userId, notificationIds, c.env);
+        await stub.markNotificationsAsRead(userId, notificationIds);
         return c.json({ success: true });
     });
     // DELETE a resource
     app.delete('/api/ideas/:id', async (c) => {
         const id = c.req.param('id');
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        await stub.deleteIdea(id, c.env);
+        await stub.deleteIdea(id);
         return c.json({ success: true }, 200);
     });
 }

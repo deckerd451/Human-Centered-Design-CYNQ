@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User } from '@shared/types';
-import { updateCurrentUser, sendMagicLink as apiSendMagicLink, verifyMagicToken } from '@/lib/apiClient';
+import { updateCurrentUser } from '@/lib/apiClient';
 type AuthState = 'disconnected' | 'awaitingMagicLink' | 'authenticating' | 'connected';
 interface AuthStore {
   authState: AuthState;
@@ -18,18 +18,33 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   magicLinkToken: null,
   sendMagicLink: async (email: string) => {
-    const { token } = await apiSendMagicLink(email);
-    set({ authState: 'awaitingMagicLink', magicLinkToken: token || null });
+    set({ authState: 'awaitingMagicLink' });
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const token = `demo-token-for-${email}`;
+    set({ magicLinkToken: token });
   },
   verifyTokenAndLogin: async (token: string) => {
     set({ authState: 'authenticating' });
-    try {
-      const user = await verifyMagicToken(token);
-      set({ authState: 'connected', user, magicLinkToken: null });
-    } catch (error) {
-      console.error("Magic link verification failed:", error);
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    if (token.startsWith('demo-token-for-')) {
+      const email = token.replace('demo-token-for-', '');
+      const username = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+      const mockUser: User = {
+        id: `user-${Math.random().toString(36).substr(2, 9)}`,
+        name: username.charAt(0).toUpperCase() + username.slice(1),
+        username: username,
+        email: email,
+        avatarUrl: `https://api.dicebear.com/8.x/lorelei/svg?seed=${username}`,
+        bio: 'A passionate innovator exploring new ideas and technologies.',
+        skills: ['React', 'TypeScript', 'Node.js'],
+        interests: ['AI', 'Web Development', 'Design'],
+      };
+      set({ authState: 'connected', user: mockUser, magicLinkToken: null });
+    } else {
+      console.error("Magic link verification failed: Invalid token");
       set({ authState: 'disconnected', user: null, magicLinkToken: null });
-      throw error;
+      throw new Error("Invalid or expired token");
     }
   },
   logout: () => {
