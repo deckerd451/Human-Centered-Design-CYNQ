@@ -102,6 +102,7 @@ function runSetupCommands() {
     "bun add uuid @types/uuid",
     "curl -s https://8001-bb3be49e-249b-4eef-ad30-a83135515dee-sxjpod7japw1do82.build-preview.cloudflare.dev/api/health",
     "ls -R dist",
+    "rm worker/static-assets.ts",
     "rm worker/static-assets.ts"
 ];
     
