@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, MessageSquare, ArrowUp, UserPlus, Inbox } from 'lucide-react';
+import { Bell, MessageSquare, ArrowUp, UserPlus, Inbox, UserCheck, UserX } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -8,10 +8,12 @@ import { useAuthStore } from '@/stores/authStore';
 import { getNotifications, markNotificationsAsRead } from '@/lib/apiClient';
 import { Notification } from '@shared/types';
 import { cn } from '@/lib/utils';
-const NOTIFICATION_ICONS = {
+const NOTIFICATION_ICONS: Record<Notification['type'], React.ReactNode> = {
   new_comment: <MessageSquare className="h-4 w-4 text-blue-500" />,
   idea_upvote: <ArrowUp className="h-4 w-4 text-green-500" />,
   join_request: <UserPlus className="h-4 w-4 text-purple-500" />,
+  join_request_accepted: <UserCheck className="h-4 w-4 text-green-500" />,
+  join_request_declined: <UserX className="h-4 w-4 text-red-500" />,
 };
 export function Notifications() {
   const user = useAuthStore((s) => s.user);

@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/stores/authStore";
-import { Lightbulb, Users, Edit, Loader2, GitBranch, Star, Heart } from "lucide-react";
+import { Lightbulb, Users, Edit, Loader2, GitBranch, Star, Heart, PlusCircle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { getIdeas, getTeams } from "@/lib/apiClient";
@@ -127,6 +127,14 @@ const GithubStats = ({ stats, username }: { stats: NonNullable<User['githubStats
     </div>
   </div>
 );
+const EmptyState = ({ icon, title, description, action }: { icon: React.ReactNode; title: string; description: string; action: React.ReactNode; }) => (
+  <div className="text-center py-8 px-4">
+    <div className="mx-auto h-12 w-12 text-muted-foreground">{icon}</div>
+    <h3 className="mt-4 text-lg font-semibold">{title}</h3>
+    <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+    <div className="mt-6">{action}</div>
+  </div>
+);
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const updateUser = useAuthStore((s) => s.updateUser);
@@ -199,6 +207,13 @@ export function DashboardPage() {
                 <GithubStats stats={user.githubStats} username={user.githubUsername} />
               </>
             )}
+            <Separator />
+            <Button asChild className="w-full sm:w-auto">
+              <Link to="/">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create New Idea
+              </Link>
+            </Button>
           </CardContent>
         </Card>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -218,7 +233,21 @@ export function DashboardPage() {
                     </li>
                   ))}
                 </ul>
-              ) : <p className="text-muted-foreground">You haven't submitted any ideas yet.</p>}
+              ) : (
+                <EmptyState
+                  icon={<Lightbulb className="h-full w-full" />}
+                  title="No ideas yet"
+                  description="Ready to change the world? Submit your first idea and get the ball rolling."
+                  action={
+                    <Button asChild>
+                      <Link to="/">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Create Idea
+                      </Link>
+                    </Button>
+                  }
+                />
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -241,7 +270,21 @@ export function DashboardPage() {
                     );
                   })}
                 </ul>
-              ) : <p className="text-muted-foreground">You are not part of any teams yet.</p>}
+              ) : (
+                <EmptyState
+                  icon={<Users className="h-full w-full" />}
+                  title="You're not on a team"
+                  description="Join a project to collaborate with other innovators and bring ideas to life."
+                  action={
+                    <Button asChild variant="outline">
+                      <Link to="/team-builder">
+                        <Search className="mr-2 h-4 w-4" />
+                        Find a Team
+                      </Link>
+                    </Button>
+                  }
+                />
+              )}
             </CardContent>
           </Card>
         </div>
