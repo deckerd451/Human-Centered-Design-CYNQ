@@ -3,21 +3,120 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/stores/authStore";
-import { Lightbulb, Users, Edit } from "lucide-react";
+import { Lightbulb, Users, Edit, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { getIdeas, getTeams } from "@/lib/apiClient";
-import { Idea, Team } from "@/lib/types";
+import { Idea, Team, User } from "@/lib/types";
 import { Link } from "react-router-dom";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Toaster, toast } from "sonner";
+const profileSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters."),
+  bio: z.string().min(10, "Bio must be at least 10 characters.").max(160, "Bio must not exceed 160 characters."),
+  skills: z.string().min(1, "Please list at least one skill."),
+  interests: z.string().min(1, "Please list at least one interest."),
+});
+type ProfileFormData = z.infer<typeof profileSchema>;
+const EditProfileDialog = ({ user, onUpdate }: { user: User; onUpdate: (data: Partial<User>) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: user.name,
+      bio: user.bio,
+      skills: user.skills.join(', '),
+      interests: user.interests.join(', '),
+    },
+  });
+  const onSubmit: SubmitHandler<ProfileFormData> = async (data) => {
+    const updatedData = {
+      ...data,
+      skills: data.skills.split(',').map(s => s.trim()).filter(Boolean),
+      interests: data.interests.split(',').map(i => i.trim()).filter(Boolean),
+    };
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+    onUpdate(updatedData);
+    toast.success("Profile updated successfully!");
+    setIsOpen(false);
+  };
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        name: user.name,
+        bio: user.bio,
+        skills: user.skills.join(', '),
+        interests: user.interests.join(', '),
+      });
+    }
+  }, [isOpen, user, reset]);
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="icon">
+          <Edit className="h-4 w-4" />
+          <span className="sr-only">Edit Profile</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Edit Profile</DialogTitle>
+          <DialogDescription>Make changes to your profile here. Click save when you're done.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input id="name" {...register('name')} />
+            {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea id="bio" {...register('bio')} />
+            {errors.bio && <p className="text-sm text-red-500 mt-1">{errors.bio.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="skills">Skills (comma-separated)</Label>
+            <Input id="skills" {...register('skills')} />
+            {errors.skills && <p className="text-sm text-red-500 mt-1">{errors.skills.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="interests">Interests (comma-separated)</Label>
+            <Input id="interests" {...register('interests')} />
+            {errors.interests && <p className="text-sm text-red-500 mt-1">{errors.interests.message}</p>}
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">Cancel</Button>
+            </DialogClose>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save changes
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
+  const updateUser = useAuthStore((s) => s.updateUser);
   const [myIdeas, setMyIdeas] = useState<Idea[]>([]);
   const [myTeams, setMyTeams] = useState<Team[]>([]);
+  const [allIdeas, setAllIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     if (user) {
-      Promise.all([getIdeas(), getTeams()]).then(([allIdeas, allTeams]) => {
-        setMyIdeas(allIdeas.filter(idea => idea.authorId === user.id));
+      setLoading(true);
+      Promise.all([getIdeas(), getTeams()]).then(([allIdeasData, allTeams]) => {
+        setAllIdeas(allIdeasData);
+        setMyIdeas(allIdeasData.filter(idea => idea.authorId === user.id));
         setMyTeams(allTeams.filter(team => team.members.includes(user.id)));
         setLoading(false);
       });
@@ -30,8 +129,10 @@ export function DashboardPage() {
       </AppLayout>
     );
   }
+  const getIdeaForTeam = (team: Team) => allIdeas.find(idea => idea.id === team.ideaId);
   return (
     <AppLayout container>
+      <Toaster />
       <div className="space-y-8">
         <Card className="overflow-hidden">
           <CardHeader className="flex-row gap-6 space-y-0 p-6 items-center">
@@ -45,10 +146,7 @@ export function DashboardPage() {
                   <h1 className="text-3xl font-bold tracking-tight">{user.name}</h1>
                   <p className="text-lg text-muted-foreground">@{user.username}</p>
                 </div>
-                <Button variant="outline" size="icon">
-                  <Edit className="h-4 w-4" />
-                  <span className="sr-only">Edit Profile</span>
-                </Button>
+                <EditProfileDialog user={user} onUpdate={updateUser} />
               </div>
               <p className="mt-2 text-foreground/90 max-w-prose">{user.bio}</p>
             </div>
@@ -97,8 +195,18 @@ export function DashboardPage() {
             </CardHeader>
             <CardContent>
               {loading ? <p>Loading teams...</p> : myTeams.length > 0 ? (
-                <ul className="space-y-3">
-                  {myTeams.map(team => <li key={team.id} className="p-3 border rounded-md bg-muted/50">{team.name}</li>)}
+                <ul className="space-y-2">
+                  {myTeams.map(team => {
+                    const idea = getIdeaForTeam(team);
+                    if (!idea) return null;
+                    return (
+                      <li key={team.id}>
+                        <Link to={`/idea/${idea.id}`} className="block p-3 -mx-3 border border-transparent rounded-md bg-muted/50 hover:bg-muted hover:border-border transition-colors font-medium">
+                          {team.name}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : <p className="text-muted-foreground">You are not part of any teams yet.</p>}
             </CardContent>

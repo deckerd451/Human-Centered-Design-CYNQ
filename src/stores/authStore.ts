@@ -6,6 +6,7 @@ interface AuthStore {
   user: User | null;
   login: () => void;
   logout: () => void;
+  updateUser: (data: Partial<User>) => void;
 }
 const mockUser: User = {
   id: 'user-1',
@@ -27,5 +28,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
   },
   logout: () => {
     set({ authState: 'disconnected', user: null });
+  },
+  updateUser: (data) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...data } : null,
+    }));
   },
 }));

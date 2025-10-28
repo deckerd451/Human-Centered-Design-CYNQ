@@ -147,3 +147,30 @@ export const addIdea = (ideaData: Omit<Idea, 'id' | 'createdAt' | 'upvotes'>): P
   mockIdeas.push(newIdea);
   return simulateDelay(newIdea, 800);
 };
+export const upvoteIdea = (ideaId: string): Promise<Idea | null> => {
+  const idea = mockIdeas.find(i => i.id === ideaId);
+  if (idea) {
+    idea.upvotes += 1;
+    return simulateDelay({ ...idea }, 300);
+  }
+  return simulateDelay(null, 300);
+};
+export const requestToJoinIdea = (ideaId: string, userId: string): Promise<Team> => {
+  let team = mockTeams.find(t => t.ideaId === ideaId);
+  if (team) {
+    if (!team.members.includes(userId)) {
+      team.members.push(userId);
+    }
+  } else {
+    const idea = mockIdeas.find(i => i.id === ideaId);
+    team = {
+      id: `team-${Date.now()}`,
+      name: `${idea?.title} Team` || 'New Team',
+      mission: `To build ${idea?.title}` || 'A new mission',
+      ideaId: ideaId,
+      members: [userId],
+    };
+    mockTeams.push(team);
+  }
+  return simulateDelay({ ...team }, 600);
+};

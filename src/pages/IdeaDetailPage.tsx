@@ -9,8 +9,9 @@ import { Toaster, toast } from "@/components/ui/sonner";
 import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getIdeaById } from "@/lib/apiClient";
+import { getIdeaById, upvoteIdea, requestToJoinIdea } from "@/lib/apiClient";
 import { Idea, Team, User } from "@/lib/types";
+import { useAuthStore } from "@/stores/authStore";
 const IdeaDetailSkeleton = () => (
   <div className="space-y-8">
     <Skeleton className="h-10 w-3/4" />
@@ -28,9 +29,11 @@ const IdeaDetailSkeleton = () => (
 );
 export function IdeaDetailPage() {
   const { ideaId } = useParams<{ ideaId: string }>();
+  const currentUser = useAuthStore((s) => s.user);
   const [data, setData] = useState<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isUpvoted, setIsUpvoted] = useState(false);
   useEffect(() => {
     if (ideaId) {
       setLoading(true);
@@ -45,11 +48,42 @@ export function IdeaDetailPage() {
       });
     }
   }, [ideaId]);
-  const handleJoinRequest = () => {
-    toast.success(`Request sent to join team for "${data?.idea.title}"!`);
+  const handleJoinRequest = async () => {
+    if (!ideaId || !currentUser) return;
+    try {
+      const updatedTeam = await requestToJoinIdea(ideaId, currentUser.id);
+      setData(prevData => {
+        if (!prevData) return null;
+        const newTeamMembers = updatedTeam.members
+          .map(memberId => [prevData.author, ...prevData.teamMembers].find(u => u.id === memberId))
+          .filter((u): u is User => !!u);
+        // Add current user to team members if not already present
+        if (!newTeamMembers.some(m => m.id === currentUser.id)) {
+            newTeamMembers.push(currentUser);
+        }
+        return {
+          ...prevData,
+          team: updatedTeam,
+          teamMembers: newTeamMembers,
+        };
+      });
+      toast.success(`Request sent to join team for "${data?.idea.title}"!`);
+    } catch (error) {
+      toast.error("Failed to send join request.");
+    }
   };
-  const handleUpvote = () => {
-    toast.success(`Upvoted "${data?.idea.title}"!`);
+  const handleUpvote = async () => {
+    if (!ideaId || isUpvoted) return;
+    try {
+      const updatedIdea = await upvoteIdea(ideaId);
+      if (updatedIdea) {
+        setData(prevData => prevData ? { ...prevData, idea: updatedIdea } : null);
+        setIsUpvoted(true);
+        toast.success(`Upvoted "${updatedIdea.title}"!`);
+      }
+    } catch (error) {
+      toast.error("Failed to upvote idea.");
+    }
   };
   if (loading) {
     return <AppLayout container><IdeaDetailSkeleton /></AppLayout>;
@@ -73,6 +107,7 @@ export function IdeaDetailPage() {
   }
   if (!data) return null;
   const { idea, author, team, teamMembers } = data;
+  const isUserInTeam = currentUser && teamMembers.some(member => member.id === currentUser.id);
   return (
     <AppLayout container>
       <Toaster />
@@ -165,13 +200,13 @@ export function IdeaDetailPage() {
               </CardContent>
             </Card>
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" onClick={handleUpvote}>
+              <Button variant="outline" onClick={handleUpvote} disabled={isUpvoted}>
                 <ArrowUp className="mr-2 h-4 w-4" />
                 Upvote ({idea.upvotes})
               </Button>
-              <Button onClick={handleJoinRequest}>
+              <Button onClick={handleJoinRequest} disabled={!!isUserInTeam}>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Request to Join
+                {isUserInTeam ? "Joined" : "Request to Join"}
               </Button>
             </div>
           </div>
