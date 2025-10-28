@@ -8,6 +8,8 @@ interface AuthStore {
   login: () => void;
   logout: () => void;
   updateUser: (data: Partial<User>) => Promise<void>;
+  connectGitHub: () => Promise<void>;
+  disconnectGitHub: () => void;
 }
 const mockUser: User = {
   id: 'user-1',
@@ -17,6 +19,12 @@ const mockUser: User = {
   bio: 'Passionate about building the future, one idea at a time. Full-stack developer with a love for serverless tech.',
   skills: ['React', 'TypeScript', 'Node.js', 'Cloudflare Workers', 'Go'],
   interests: ['AI/ML', 'Decentralized Systems', 'UX Design'],
+  githubUsername: 'alex-innovator',
+  githubStats: {
+    repos: 42,
+    followers: 1200,
+    following: 150,
+  },
 };
 export const useAuthStore = create<AuthStore>((set, get) => ({
   authState: 'disconnected',
@@ -49,5 +57,33 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ user: previousUser });
       throw error; // Re-throw to be caught by the form handler
     }
+  },
+  connectGitHub: () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        set((state) => {
+          if (state.user) {
+            return {
+              user: {
+                ...state.user,
+                githubUsername: 'alex-innovator',
+                githubStats: { repos: 42, followers: 1200, following: 150 },
+              },
+            };
+          }
+          return {};
+        });
+        resolve();
+      }, 1000);
+    });
+  },
+  disconnectGitHub: () => {
+    set((state) => {
+      if (state.user) {
+        const { githubUsername, githubStats, ...rest } = state.user;
+        return { user: rest };
+      }
+      return {};
+    });
   },
 }));
