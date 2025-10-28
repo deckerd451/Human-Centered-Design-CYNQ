@@ -1,13 +1,26 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { User, Idea, Team, Comment, Notification } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
-// Placeholder credentials - in a real application, these would be secrets.
-const SUPABASE_URL = 'https://placeholder.supabase.co';
-const SUPABASE_KEY = 'placeholder-anon-key';
 let supabase: SupabaseClient;
+
+export const initSupabase = (env: { SUPABASE_URL: string; SUPABASE_KEY: string; }) => {
+  if (!supabase) {
+    // The `fetch` option is required for Supabase to work in a Cloudflare Worker.
+    // `persistSession: false` is recommended for serverless environments.
+    supabase = createClient(env.SUPABASE_URL, env.SUPABASE_KEY, {
+      auth: {
+        persistSession: false,
+      },
+      global: {
+        fetch: fetch,
+      },
+    });
+  }
+};
+
 const getSupabaseClient = () => {
   if (!supabase) {
-    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    throw new Error('Supabase client has not been initialized. Call initSupabase() first.');
   }
   return supabase;
 };
