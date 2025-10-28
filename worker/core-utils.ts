@@ -9,3 +9,4 @@ export type Env = {
     SUPABASE_URL: string;
     SUPABASE_KEY: string;
 }
+export type SanitizedEnv = Omit<Env, 'GlobalDurableObject'>;
