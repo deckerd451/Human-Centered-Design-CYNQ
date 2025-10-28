@@ -83,7 +83,8 @@ function runSetupCommands() {
     "rm -rf src/pages/RepositoriesPage.tsx",
     "rm -rf src/pages/RepositoryDetailPage.tsx",
     "rm -rf src/lib/types.ts",
-    "rm -rf src/pages/DemoPage.tsx"
+    "rm -rf src/pages/DemoPage.tsx",
+    "bun install reactflow"
 ];
     
     if (commands.length === 0) {
