@@ -6,16 +6,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "@/components/ui/sonner";
-import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2 } from "lucide-react";
+import { ArrowUp, UserPlus, Tag, Users, Calendar, Frown, ArrowLeft, MessageSquare, Send, Loader2, Check, X, UserCheck } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getIdeaById, upvoteIdea, requestToJoinIdea, getComments, postComment, getUsers } from "@/lib/apiClient";
+import { getIdeaById, upvoteIdea, requestToJoinIdea, getComments, postComment, getUsers, acceptJoinRequest, declineJoinRequest } from "@/lib/apiClient";
 import { Idea, Team, User, Comment } from "@shared/types";
 import { useAuthStore } from "@/stores/authStore";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 const commentSchema = z.object({
   content: z.string().min(1, "Comment cannot be empty.").max(500, "Comment is too long."),
 });
@@ -108,6 +109,73 @@ const CommentsSection = ({ ideaId }: { ideaId: string }) => {
     </Card>
   );
 };
+const TeamManagementCard = ({ ideaId, requesters, onUpdateRequest }: { ideaId: string; requesters: User[]; onUpdateRequest: (updatedTeam: Team) => void }) => {
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const handleAccept = async (userId: string) => {
+    setProcessingId(userId);
+    try {
+      const updatedTeam = await acceptJoinRequest(ideaId, userId);
+      toast.success("Request accepted!");
+      onUpdateRequest(updatedTeam);
+    } catch (error) {
+      toast.error("Failed to accept request.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+  const handleDecline = async (userId: string) => {
+    setProcessingId(userId);
+    try {
+      const updatedTeam = await declineJoinRequest(ideaId, userId);
+      toast.info("Request declined.");
+      onUpdateRequest(updatedTeam);
+    } catch (error) {
+      toast.error("Failed to decline request.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <UserCheck /> Team Management
+        </CardTitle>
+        <CardDescription>Review and manage requests to join your team.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {requesters.length > 0 ? (
+          <ul className="space-y-3">
+            {requesters.map(user => (
+              <li key={user.id} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">{user.name}</p>
+                    <p className="text-sm text-muted-foreground">@{user.username}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button size="icon" variant="outline" onClick={() => handleDecline(user.id)} disabled={processingId === user.id}>
+                    {processingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                  </Button>
+                  <Button size="icon" onClick={() => handleAccept(user.id)} disabled={processingId === user.id}>
+                    {processingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">No pending join requests.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 const IdeaDetailSkeleton = () => (
   <div className="space-y-8">
     <Skeleton className="h-10 w-3/4" />
@@ -127,7 +195,7 @@ const IdeaDetailSkeleton = () => (
 export function IdeaDetailPage() {
   const { ideaId } = useParams<{ ideaId: string }>();
   const currentUser = useAuthStore((s) => s.user);
-  const [data, setData] = useState<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[] } | null>(null);
+  const [data, setData] = useState<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [isUpvoted, setIsUpvoted] = useState(false);
@@ -153,23 +221,8 @@ export function IdeaDetailPage() {
     if (!ideaId || !currentUser) return;
     try {
       const updatedTeam = await requestToJoinIdea(ideaId, currentUser.id);
-      setData(prevData => {
-        if (!prevData) return null;
-        const existingMemberIds = new Set(prevData.teamMembers.map(m => m.id));
-        const allPossibleMembers = [...prevData.teamMembers, prevData.author];
-        if(!existingMemberIds.has(currentUser.id)) {
-            allPossibleMembers.push(currentUser);
-        }
-        const newTeamMembers = updatedTeam.members
-          .map(memberId => allPossibleMembers.find(u => u.id === memberId))
-          .filter((u): u is User => !!u);
-        return {
-          ...prevData,
-          team: updatedTeam,
-          teamMembers: newTeamMembers,
-        };
-      });
-      toast.success(`Successfully joined team for "${data?.idea.title}"!`);
+      setData(prevData => prevData ? { ...prevData, team: updatedTeam } : null);
+      toast.success(`Your request to join has been sent!`);
     } catch (error) {
       toast.error("Failed to send join request.");
     }
@@ -186,6 +239,21 @@ export function IdeaDetailPage() {
     } catch (error) {
       toast.error("Failed to upvote idea.");
     }
+  };
+  const handleTeamUpdate = (updatedTeam: Team) => {
+    setData(prevData => {
+      if (!prevData) return null;
+      const allUsers = [...prevData.teamMembers, ...prevData.joinRequesters, prevData.author];
+      const uniqueUsers = Array.from(new Map(allUsers.map(u => [u.id, u])).values());
+      const newTeamMembers = updatedTeam.members.map(id => uniqueUsers.find(u => u.id === id)).filter((u): u is User => !!u);
+      const newJoinRequesters = (updatedTeam.joinRequests || []).map(id => uniqueUsers.find(u => u.id === id)).filter((u): u is User => !!u);
+      return {
+        ...prevData,
+        team: updatedTeam,
+        teamMembers: newTeamMembers,
+        joinRequesters: newJoinRequesters,
+      };
+    });
   };
   if (loading) {
     return <AppLayout container><IdeaDetailSkeleton /></AppLayout>;
@@ -208,8 +276,10 @@ export function IdeaDetailPage() {
     );
   }
   if (!data || !ideaId) return null;
-  const { idea, author, team, teamMembers } = data;
+  const { idea, author, team, teamMembers, joinRequesters } = data;
   const isUserInTeam = currentUser && teamMembers.some(member => member.id === currentUser.id);
+  const hasPendingRequest = currentUser && (team?.joinRequests || []).includes(currentUser.id);
+  const isAuthor = currentUser && currentUser.id === author.id;
   return (
     <AppLayout container>
       <Toaster />
@@ -235,6 +305,7 @@ export function IdeaDetailPage() {
         </header>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6">
+            {isAuthor && <TeamManagementCard ideaId={ideaId} requesters={joinRequesters} onUpdateRequest={handleTeamUpdate} />}
             <Card>
               <CardHeader>
                 <CardTitle>Description</CardTitle>
@@ -307,9 +378,9 @@ export function IdeaDetailPage() {
                 <ArrowUp className="mr-2 h-4 w-4" />
                 Upvote ({idea.upvotes})
               </Button>
-              <Button onClick={handleJoinRequest} disabled={!!isUserInTeam}>
+              <Button onClick={handleJoinRequest} disabled={isUserInTeam || hasPendingRequest || isAuthor}>
                 <UserPlus className="mr-2 h-4 w-4" />
-                {isUserInTeam ? "Joined" : "Request to Join"}
+                {isUserInTeam ? "Joined" : hasPendingRequest ? "Request Sent" : "Request to Join"}
               </Button>
             </div>
           </div>
