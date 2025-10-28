@@ -3,7 +3,7 @@ import type { User, Idea, Team, Comment, Notification } from '@shared/types';
 import * as supabase from './supabase';
 import { SanitizedEnv, Env } from "./core-utils";
 export class GlobalDurableObject extends DurableObject {
-    private env: SanitizedEnv;
+    protected env: SanitizedEnv;
     constructor(state: DurableObjectState, env: Env) {
         super(state, env);
         // It's safe to store the env object here, as it's part of the DO's context
