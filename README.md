@@ -1,6 +1,6 @@
 # Innovation Engine
 An application to foster, develop, and collaborate on new ideas.
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/deckerd451/Human-Centered-Design-CYNQ)
 ## Overview
 The Innovation Engine is a web platform designed to capture, refine, and build upon creative ideas. It provides a collaborative space where users can submit their concepts, form teams with skilled individuals, and manage their projects from inception to completion. The platform includes features like idea submission, team building, a leaderboard to recognize top innovators, and an interactive graph to visualize the entire innovation ecosystem.
 Built on Cloudflare's serverless infrastructure and backed by Supabase, the application is fast, reliable, and scalable, providing a seamless experience for innovators worldwide.
