@@ -45,7 +45,7 @@ const handleError = (error: any, context: string) => {
 };
 // User Functions
 export const getUsers = async (env: SanitizedEnv): Promise<User[]> => {
-  if (shouldUseMockData(env)) return Promise.resolve(getMockData().users);
+  if (shouldUseMockData(env)) return Promise.resolve(getMockData().MOCK_USERS);
   try {
     return await supabaseFetch<User[]>(env, { table: 'users', query: '?select=*' });
   } catch (error) {
@@ -56,10 +56,10 @@ export const getUsers = async (env: SanitizedEnv): Promise<User[]> => {
 export const updateUser = async (env: SanitizedEnv, userId: string, updates: Partial<User>): Promise<User | null> => {
   if (shouldUseMockData(env)) {
     const mockData = getMockData();
-    const userIndex = mockData.users.findIndex(u => u.id === userId);
+    const userIndex = mockData.MOCK_USERS.findIndex(u => u.id === userId);
     if (userIndex === -1) return null;
-    mockData.users[userIndex] = { ...mockData.users[userIndex], ...updates };
-    return Promise.resolve(mockData.users[userIndex]);
+    mockData.MOCK_USERS[userIndex] = { ...mockData.MOCK_USERS[userIndex], ...updates };
+    return Promise.resolve(mockData.MOCK_USERS[userIndex]);
   }
   try {
     const data = await supabaseFetch<User[]>(env, { table: 'users', method: 'PATCH', body: updates, query: `?id=eq.${userId}` });
@@ -71,7 +71,7 @@ export const updateUser = async (env: SanitizedEnv, userId: string, updates: Par
 };
 // Idea Functions
 export const getIdeas = async (env: SanitizedEnv): Promise<Idea[]> => {
-  if (shouldUseMockData(env)) return Promise.resolve(getMockData().ideas);
+  if (shouldUseMockData(env)) return Promise.resolve(getMockData().MOCK_IDEAS);
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'ideas', query: '?select=*&order=created_at.desc' });
     return (data || []).map(idea => ({ ...idea, createdAt: idea.created_at }));
@@ -83,12 +83,12 @@ export const getIdeas = async (env: SanitizedEnv): Promise<Idea[]> => {
 export const getIdeaById = async (env: SanitizedEnv, id: string): Promise<{ idea: Idea; author: User; team: Team | undefined; teamMembers: User[]; joinRequesters: User[] } | null> => {
   if (shouldUseMockData(env)) {
     const mockData = getMockData();
-    const idea = mockData.ideas.find(i => i.id === id);
+    const idea = mockData.MOCK_IDEAS.find(i => i.id === id);
     if (!idea) return null;
-    const author = mockData.users.find(u => u.id === idea.authorId)!;
-    const team = mockData.teams.find(t => t.ideaId === id);
-    const teamMembers = team ? mockData.users.filter(u => team.members.includes(u.id)) : [];
-    const joinRequesters = team ? mockData.users.filter(u => team.joinRequests.includes(u.id)) : [];
+    const author = mockData.MOCK_USERS.find(u => u.id === idea.authorId)!;
+    const team = mockData.MOCK_TEAMS.find(t => t.ideaId === id);
+    const teamMembers = team ? mockData.MOCK_USERS.filter(u => team.members.includes(u.id)) : [];
+    const joinRequesters = team ? mockData.MOCK_USERS.filter(u => team.joinRequests.includes(u.id)) : [];
     return { idea, author, team, teamMembers, joinRequesters };
   }
   try {
@@ -124,7 +124,7 @@ export const addIdea = async (env: SanitizedEnv, ideaData: Omit<Idea, 'id' | 'cr
       createdAt: new Date().toISOString(),
       projectBoard: { columns: [{ id: 'todo', title: 'To Do', tasks: [] }, { id: 'inProgress', title: 'In Progress', tasks: [] }, { id: 'done', title: 'Done', tasks: [] }] },
     };
-    getMockData().ideas.unshift(newIdea);
+    getMockData().MOCK_IDEAS.unshift(newIdea);
     return Promise.resolve(newIdea);
   }
   const newIdea = {
@@ -146,10 +146,10 @@ export const addIdea = async (env: SanitizedEnv, ideaData: Omit<Idea, 'id' | 'cr
 export const updateIdea = async (env: SanitizedEnv, id: string, updates: Partial<Idea>): Promise<Idea | null> => {
     if (shouldUseMockData(env)) {
         const mockData = getMockData();
-        const ideaIndex = mockData.ideas.findIndex(i => i.id === id);
+        const ideaIndex = mockData.MOCK_IDEAS.findIndex(i => i.id === id);
         if (ideaIndex === -1) return null;
-        mockData.ideas[ideaIndex] = { ...mockData.ideas[ideaIndex], ...updates };
-        return Promise.resolve(mockData.ideas[ideaIndex]);
+        mockData.MOCK_IDEAS[ideaIndex] = { ...mockData.MOCK_IDEAS[ideaIndex], ...updates };
+        return Promise.resolve(mockData.MOCK_IDEAS[ideaIndex]);
     }
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'ideas', method: 'PATCH', body: updates, query: `?id=eq.${id}` });
@@ -163,10 +163,26 @@ export const updateIdea = async (env: SanitizedEnv, id: string, updates: Partial
 export const deleteIdea = async (env: SanitizedEnv, id: string): Promise<void> => {
     if (shouldUseMockData(env)) {
         const mockData = getMockData();
-        mockData.ideas = mockData.ideas.filter(i => i.id !== id);
-        mockData.teams = mockData.teams.filter(t => t.ideaId !== id);
-        mockData.comments = mockData.comments.filter(c => c.ideaId !== id);
-        mockData.notifications = mockData.notifications.filter(n => !n.link.includes(id));
+        for (let i = mockData.MOCK_IDEAS.length - 1; i >= 0; i--) {
+            if (mockData.MOCK_IDEAS[i].id === id) {
+                mockData.MOCK_IDEAS.splice(i, 1);
+            }
+        }
+        for (let i = mockData.MOCK_TEAMS.length - 1; i >= 0; i--) {
+            if (mockData.MOCK_TEAMS[i].ideaId === id) {
+                mockData.MOCK_TEAMS.splice(i, 1);
+            }
+        }
+        for (let i = mockData.MOCK_COMMENTS.length - 1; i >= 0; i--) {
+            if (mockData.MOCK_COMMENTS[i].ideaId === id) {
+                mockData.MOCK_COMMENTS.splice(i, 1);
+            }
+        }
+        for (let i = mockData.MOCK_NOTIFICATIONS.length - 1; i >= 0; i--) {
+            if (mockData.MOCK_NOTIFICATIONS[i].link.includes(id)) {
+                mockData.MOCK_NOTIFICATIONS.splice(i, 1);
+            }
+        }
         return Promise.resolve();
     }
   try {
@@ -180,7 +196,7 @@ export const deleteIdea = async (env: SanitizedEnv, id: string): Promise<void> =
 };
 export const upvoteIdea = async (env: SanitizedEnv, ideaId: string): Promise<Idea | null> => {
     if (shouldUseMockData(env)) {
-        const idea = getMockData().ideas.find(i => i.id === ideaId);
+        const idea = getMockData().MOCK_IDEAS.find(i => i.id === ideaId);
         if (!idea) return null;
         idea.upvotes += 1;
         return Promise.resolve(idea);
@@ -196,7 +212,7 @@ export const upvoteIdea = async (env: SanitizedEnv, ideaId: string): Promise<Ide
 };
 // Team Functions
 export const getTeams = async (env: SanitizedEnv): Promise<Team[]> => {
-  if (shouldUseMockData(env)) return Promise.resolve(getMockData().teams);
+  if (shouldUseMockData(env)) return Promise.resolve(getMockData().MOCK_TEAMS);
   try {
     return await supabaseFetch<Team[]>(env, { table: 'teams', query: '?select=*' });
   } catch (error) {
@@ -207,11 +223,11 @@ export const getTeams = async (env: SanitizedEnv): Promise<Team[]> => {
 export const requestToJoinIdea = async (env: SanitizedEnv, ideaId: string, userId: string): Promise<Team> => {
     if (shouldUseMockData(env)) {
         const mockData = getMockData();
-        let team = mockData.teams.find(t => t.ideaId === ideaId);
+        let team = mockData.MOCK_TEAMS.find(t => t.ideaId === ideaId);
         if (!team) {
-            const idea = mockData.ideas.find(i => i.id === ideaId)!;
+            const idea = mockData.MOCK_IDEAS.find(i => i.id === ideaId)!;
             team = { id: uuidv4(), name: `Team for ${idea.title}`, mission: '', ideaId, members: [idea.authorId], joinRequests: [] };
-            mockData.teams.push(team);
+            mockData.MOCK_TEAMS.push(team);
         }
         if (!team.joinRequests.includes(userId)) {
             team.joinRequests.push(userId);
@@ -228,7 +244,7 @@ export const requestToJoinIdea = async (env: SanitizedEnv, ideaId: string, userI
 };
 export const acceptJoinRequest = async (env: SanitizedEnv, ideaId: string, userId: string): Promise<Team | null> => {
     if (shouldUseMockData(env)) {
-        const team = getMockData().teams.find(t => t.ideaId === ideaId);
+        const team = getMockData().MOCK_TEAMS.find(t => t.ideaId === ideaId);
         if (!team || !team.joinRequests.includes(userId)) return null;
         team.joinRequests = team.joinRequests.filter(id => id !== userId);
         if (!team.members.includes(userId)) {
@@ -246,7 +262,7 @@ export const acceptJoinRequest = async (env: SanitizedEnv, ideaId: string, userI
 };
 export const declineJoinRequest = async (env: SanitizedEnv, ideaId: string, userId: string): Promise<Team | null> => {
     if (shouldUseMockData(env)) {
-        const team = getMockData().teams.find(t => t.ideaId === ideaId);
+        const team = getMockData().MOCK_TEAMS.find(t => t.ideaId === ideaId);
         if (!team) return null;
         team.joinRequests = team.joinRequests.filter(id => id !== userId);
         return Promise.resolve(team);
@@ -261,7 +277,7 @@ export const declineJoinRequest = async (env: SanitizedEnv, ideaId: string, user
 };
 // Comment Functions
 export const getCommentsForIdea = async (env: SanitizedEnv, ideaId: string): Promise<Comment[]> => {
-  if (shouldUseMockData(env)) return Promise.resolve(getMockData().comments.filter(c => c.ideaId === ideaId));
+  if (shouldUseMockData(env)) return Promise.resolve(getMockData().MOCK_COMMENTS.filter(c => c.ideaId === ideaId));
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'comments', query: `?select=*&ideaId=eq.${ideaId}&order=created_at.asc` });
     return (data || []).map(c => ({ ...c, createdAt: c.created_at }));
@@ -273,7 +289,7 @@ export const getCommentsForIdea = async (env: SanitizedEnv, ideaId: string): Pro
 export const addComment = async (env: SanitizedEnv, commentData: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> => {
     if (shouldUseMockData(env)) {
         const newComment: Comment = { ...commentData, id: uuidv4(), createdAt: new Date().toISOString() };
-        getMockData().comments.push(newComment);
+        getMockData().MOCK_COMMENTS.push(newComment);
         return Promise.resolve(newComment);
     }
   const newComment = { ...commentData, id: uuidv4(), created_at: new Date().toISOString() };
@@ -288,7 +304,7 @@ export const addComment = async (env: SanitizedEnv, commentData: Omit<Comment, '
 };
 // Notification Functions
 export const getNotificationsForUser = async (env: SanitizedEnv, userId: string): Promise<Notification[]> => {
-  if (shouldUseMockData(env)) return Promise.resolve(getMockData().notifications.filter(n => n.userId === userId));
+  if (shouldUseMockData(env)) return Promise.resolve(getMockData().MOCK_NOTIFICATIONS.filter(n => n.userId === userId));
   try {
     const data = await supabaseFetch<any[]>(env, { table: 'notifications', query: `?select=*&userId=eq.${userId}&order=created_at.desc` });
     return (data || []).map(n => ({ ...n, createdAt: n.created_at }));
@@ -299,7 +315,7 @@ export const getNotificationsForUser = async (env: SanitizedEnv, userId: string)
 };
 export const markNotificationsAsRead = async (env: SanitizedEnv, userId: string, notificationIds: string[]): Promise<void> => {
     if (shouldUseMockData(env)) {
-        getMockData().notifications.forEach(n => {
+        getMockData().MOCK_NOTIFICATIONS.forEach(n => {
             if (n.userId === userId && notificationIds.includes(n.id)) {
                 n.read = true;
             }
@@ -316,8 +332,8 @@ export const markNotificationsAsRead = async (env: SanitizedEnv, userId: string,
 export const getLeaderboardData = async (env: SanitizedEnv): Promise<{ users: User[], ideas: Idea[] }> => {
     if (shouldUseMockData(env)) {
         const mockData = getMockData();
-        const users = [...mockData.users].sort((a, b) => b.skills.length - a.skills.length).slice(0, 5);
-        const ideas = [...mockData.ideas].sort((a, b) => b.upvotes - a.upvotes).slice(0, 5);
+        const users = [...mockData.MOCK_USERS].sort((a, b) => b.skills.length - a.skills.length).slice(0, 5);
+        const ideas = [...mockData.MOCK_IDEAS].sort((a, b) => b.upvotes - a.upvotes).slice(0, 5);
         return Promise.resolve({ users, ideas });
     }
   try {

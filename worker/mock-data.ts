@@ -1,11 +1,11 @@
 import { User, Idea, Team, Comment, Notification, BoardColumn } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 interface MockData {
-  users: User[];
-  ideas: Idea[];
-  teams: Team[];
-  comments: Comment[];
-  notifications: Notification[];
+  MOCK_USERS: User[];
+  MOCK_IDEAS: Idea[];
+  MOCK_TEAMS: Team[];
+  MOCK_COMMENTS: Comment[];
+  MOCK_NOTIFICATIONS: Notification[];
 }
 let mockDataInstance: MockData | null = null;
 export const getMockData = (): MockData => {
@@ -17,7 +17,7 @@ export const getMockData = (): MockData => {
   const user2Id = 'user-2';
   const user3Id = 'user-3';
   const user4Id = 'user-4';
-  const users: User[] = [
+  const MOCK_USERS: User[] = [
     {
       id: user1Id,
       name: 'Elena Voyager',
@@ -72,7 +72,7 @@ export const getMockData = (): MockData => {
       { id: 'done', title: 'Done', tasks: [{ id: uuidv4(), content: 'Market research' }] },
     ],
   });
-  const ideas: Idea[] = [
+  const MOCK_IDEAS: Idea[] = [
     {
       id: idea1Id,
       title: 'Synapse: AI-Powered Learning Platform',
@@ -119,7 +119,7 @@ export const getMockData = (): MockData => {
   ];
   const team1Id = 'team-1';
   const team2Id = 'team-2';
-  const teams: Team[] = [
+  const MOCK_TEAMS: Team[] = [
     {
       id: team1Id,
       name: 'Team Synapse',
@@ -137,7 +137,7 @@ export const getMockData = (): MockData => {
       joinRequests: [],
     },
   ];
-  const comments: Comment[] = [
+  const MOCK_COMMENTS: Comment[] = [
     {
       id: uuidv4(),
       ideaId: idea1Id,
@@ -153,7 +153,7 @@ export const getMockData = (): MockData => {
       createdAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
     },
   ];
-  const notifications: Notification[] = [
+  const MOCK_NOTIFICATIONS: Notification[] = [
     {
       id: uuidv4(),
       userId: user1Id,
@@ -174,11 +174,11 @@ export const getMockData = (): MockData => {
     },
   ];
   mockDataInstance = {
-    users,
-    ideas,
-    teams,
-    comments,
-    notifications,
+    MOCK_USERS,
+    MOCK_IDEAS,
+    MOCK_TEAMS,
+    MOCK_COMMENTS,
+    MOCK_NOTIFICATIONS,
   };
   return mockDataInstance;
 };
