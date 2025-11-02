@@ -163,26 +163,9 @@ export const updateIdea = async (env: SanitizedEnv, id: string, updates: Partial
 export const deleteIdea = async (env: SanitizedEnv, id: string): Promise<void> => {
     if (shouldUseMockData(env)) {
         const mockData = getMockData();
-        for (let i = mockData.MOCK_IDEAS.length - 1; i >= 0; i--) {
-            if (mockData.MOCK_IDEAS[i].id === id) {
-                mockData.MOCK_IDEAS.splice(i, 1);
-            }
-        }
-        for (let i = mockData.MOCK_TEAMS.length - 1; i >= 0; i--) {
-            if (mockData.MOCK_TEAMS[i].ideaId === id) {
-                mockData.MOCK_TEAMS.splice(i, 1);
-            }
-        }
-        for (let i = mockData.MOCK_COMMENTS.length - 1; i >= 0; i--) {
-            if (mockData.MOCK_COMMENTS[i].ideaId === id) {
-                mockData.MOCK_COMMENTS.splice(i, 1);
-            }
-        }
-        for (let i = mockData.MOCK_NOTIFICATIONS.length - 1; i >= 0; i--) {
-            if (mockData.MOCK_NOTIFICATIONS[i].link.includes(id)) {
-                mockData.MOCK_NOTIFICATIONS.splice(i, 1);
-            }
-        }
+        mockData.MOCK_IDEAS = mockData.MOCK_IDEAS.filter(i => i.id !== id);
+        mockData.MOCK_TEAMS = mockData.MOCK_TEAMS.filter(t => t.ideaId !== id);
+        mockData.MOCK_COMMENTS = mockData.MOCK_COMMENTS.filter(c => c.ideaId !== id);
         return Promise.resolve();
     }
   try {
