@@ -78,36 +78,13 @@ function updateWranglerJsonc() {
 
 function runSetupCommands() {
     const commands = [
-    "rm -rf src/components/ThemeToggle.tsx",
-    "rm -rf src/lib/github.ts",
-    "rm -rf src/pages/RepositoriesPage.tsx",
-    "rm -rf src/pages/RepositoryDetailPage.tsx",
-    "rm -rf src/lib/types.ts",
-    "rm -rf src/pages/DemoPage.tsx",
     "bun install reactflow",
     "bun install @xyflow/react",
     "bun uninstall reactflow react-flow",
     "bun add @supabase/supabase-js",
-    "bun install @xyflow/react",
-    "rm -rf worker/supabaseClient.ts",
-    "rm -rf src/pages/DemoPage.tsx",
     "bun add node-fetch",
     "bun remove @supabase/supabase-js node-fetch",
-    "rm -rf src/pages/DemoPage.tsx",
-    "bun install",
-    "rm -rf shared/mock-data.ts",
-    "rm -rf src/pages/DemoPage.tsx",
-    "rm -rf shared/mock-data.ts",
-    "bun install",
-    "bun add uuid @types/uuid",
-    "curl -s https://8001-bb3be49e-249b-4eef-ad30-a83135515dee-sxjpod7japw1do82.build-preview.cloudflare.dev/api/health",
-    "ls -R dist",
-    "rm worker/static-assets.ts",
-    "rm worker/static-assets.ts",
-    "ls -R dist",
-    "ls -RF",
-    "bun install",
-    "rm -rf node_modules && bun install"
+    "bun add uuid @types/uuid"
 ];
     
     if (commands.length === 0) {
